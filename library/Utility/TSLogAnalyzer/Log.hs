@@ -65,12 +65,12 @@ type Time = Int
 
 type UserID = Int
 
-genIP :: Int → Int → Int → Int → Int → IP
+genIP :: Int -> Int -> Int -> Int -> Int -> IP
 genIP o1 o2 o3 o4 = IP address
     where
     address = (o1 * (256^3)) + (o2 * (256^2)) + (o3 * 256) + o4
 
-genOctets :: IP → (Int, Int, Int, Int)
+genOctets :: IP -> (Int, Int, Int, Int)
 genOctets (IP a _) = (o1, o2, o3, o4)
     where
     o4 = a `mod` 256
