@@ -1,16 +1,20 @@
 {-# NoMonomorphismRestriction #-}
 
-module TimeParse (timeParse, unixTSDate, timeParseCheck) where
-import           Control.Applicative ((<$>))
-import           Data.Maybe          (mapMaybe, maybe, maybeToList)
-import           Data.Text           (Text, pack, unpack)
-import           Data.Time.Format    (FormatTime, ParseTime, formatTime,
-                                      parseTime)
-import           Log
-import           Prelude.Unicode
-import           System.Locale       (TimeLocale, defaultTimeLocale)
-import           System.Process      (readProcess)
-import           Text.Read           (readMaybe)
+module  Utility.TSLogAnalyzer.TimeParse ( timeParse
+                                        , unixTSDate
+                                        , timeParseCheck
+                                        ) where
+
+import           Control.Applicative       ((<$>))
+import           Data.Maybe                (mapMaybe, maybe, maybeToList)
+import           Data.Text                 (Text, pack, unpack)
+import           Data.Time.Format          (FormatTime, ParseTime, formatTime,
+                                            parseTime)
+import           System.Locale             (TimeLocale, defaultTimeLocale)
+import           System.Process            (readProcess)
+import           Text.Read                 (readMaybe)
+
+import           Utility.TSLogAnalyzer.Log
 
 data TSDate = TSDate { year  :: Int
                      , month :: Int

@@ -1,13 +1,19 @@
-module Parse (logParse, parseLogs, mergeLogins) where
-import           Data.List       (sortBy)
-import           Data.Maybe      (maybeToList)
-import           Data.Ord        (comparing)
-import           Data.Text       (pack)
-import           Log
-import           MsgParse
-import           Prelude.Unicode
+module Utility.TSLogAnalyzer.Parse ( logParse
+                                   , parseLogs
+                                   , mergeLogins
+                                   ) where
+
+import           Data.List                       (sortBy)
+import           Data.Maybe                      (maybeToList)
+import           Data.Ord                        (comparing)
+import           Data.Text                       (pack)
 import           Text.Read
-import           TimeParse
+
+import           Prelude.Unicode
+
+import           Utility.TSLogAnalyzer.Log
+import           Utility.TSLogAnalyzer.MsgParse
+import           Utility.TSLogAnalyzer.TimeParse
 
 delimiter :: Eq α => α -> [α] -> [[α]]
 delimiter _ [] = []
@@ -31,13 +37,13 @@ mergeLoginsCore c ((t, DCN) : xs)
     | c ≡ 1                       = t : mergeLoginsCore 0 xs
     | otherwise                   =     mergeLoginsCore (c - 1) xs
 
-tuplify :: [α] -> [(α, α)]
-tuplify [] = []
-tuplify (_:[]) = []
-tuplify (x:y:xs) = (x, y) : tuplify xs
+toPairs :: [α] -> [(α, α)]
+toPairs []       = []
+toPairs [_]      = []
+toPairs (x:y:xs) = (x, y) : toPairs xs
 
 mergeLogins :: [(α, ConnectType)] -> [(α, α)]
-mergeLogins = tuplify ∘ mergeLoginsCore 0
+mergeLogins = toPairs ∘ mergeLoginsCore 0
 
 tsParseLine :: String -> Maybe LogEntry
 tsParseLine s = do
@@ -45,13 +51,16 @@ tsParseLine s = do
         es <- if length ds ≡ 5 then Just (map stripSpaces ds) else Nothing
         let [timStr, levStr, srcStr, _, _:msgStr] = es
         tim <- timeParse (pack timStr)
-        lev <- readMaybe levStr :: Maybe LogLevel
-        src <- readMaybe srcStr :: Maybe LogSource
+        lev <- readMaybe levStr
+        src <- readMaybe srcStr
         msg <- Just (pack (msgStr ++ ";"))
         return (LogEntry tim lev src msg)
 
 tsParseLines :: String -> [LogEntry]
-tsParseLines = sortBy (comparing time) ∘ concat ∘ map (maybeToList ∘ tsParseLine) ∘ lines
+tsParseLines = sortBy (comparing time)
+             ∘ concat
+             ∘ map (maybeToList ∘ tsParseLine)
+             ∘ lines
 
 parseLog :: LogEntry -> Maybe (Time, Connection)
 parseLog (LogEntry t _ _ m) = do
@@ -62,6 +71,4 @@ parseLogs :: [LogEntry] -> [(Time, Connection)]
 parseLogs = concat ∘ map (maybeToList ∘ parseLog)
 
 logParse :: FilePath -> IO [LogEntry]
-logParse fp = do
-        fc <- readFile fp
-        return (tsParseLines fc)
+logParse fp = tsParseLines <$> readFile fp

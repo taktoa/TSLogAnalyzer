@@ -1,29 +1,37 @@
-module Utility.TSLogAnalyzer.Log where
-import           Data.Text       (Text)
-import           Prelude.Unicode
+module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
+                                 , Connection  (..)
+                                 , Session     (..)
+                                 , LogLevel    (..)
+                                 , LogSource   (..)
+                                 , ConnectType (..)
+                                 , Time        (..)
+                                 , UserID      (..)
+                                 , IP          (..)
+                                 , mkIP, getOctets
+                                 ) where
 
-data LogEntry = LogEntry {
-                    time    :: Time,
-                    level   :: LogLevel,
-                    source  :: LogSource,
-                    message :: Text
-                } deriving (Eq, Show, Read)
+import           Data.Text (Text)
 
-data Connection = Connection {
-                    connType :: ConnectType,
-                    userName :: Text,
-                    userID   :: Int,
-                    userIP   :: Maybe IP,
-                    reason   :: Maybe Text
-                } deriving (Eq, Show, Read)
+data LogEntry = LogEntry { entryTime    :: Time
+                         , entryLevel   :: LogLevel
+                         , entrySource  :: LogSource
+                         , entryMessage :: Text
+                         } deriving (Eq, Show, Read)
 
-data Session = Session {
-                    times :: (Time, Time),
-                    name  :: Text,
-                    id    :: Int,
-                    ip    :: IP,
-                    rsn   :: Text
-                } deriving (Eq, Show, Read)
+data Connection = Connection { connType   :: ConnectType
+                             , connName   :: Text
+                             , connUID    :: Int
+                             , connIP     :: Maybe IP
+                             , connReason :: Maybe Text
+                             } deriving (Eq, Show, Read)
+
+data Session = Session { sessStart  :: Time
+                       , sessEnd    :: Time
+                       , sessName   :: Text
+                       , sessUID    :: Int
+                       , sessIP     :: IP
+                       , sessReason :: Text
+                       } deriving (Eq, Show, Read)
 
 data LogLevel   = DEVELOP
                 | INFO
@@ -57,21 +65,23 @@ data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read)
 
-data IP = IP { addr :: Int
-             , port :: Int
+newtype Time = Time Int
+             deriving (Eq, Ord, Show, Read)
+
+newtype UserID = UserID Int
+               deriving (Eq, Ord, Show, Read)
+
+data IP = IP { getAddr :: Int
+             , getPort :: Int
              } deriving (Read, Show, Eq)
 
-type Time = Int
+-- | Make an IP
+mkIP :: (Int, Int, Int, Int) -> Int -> IP
+mkIP (o1, o2, o3, o4) = IP $ o1 * (256^3) + o2 * (256^2) + o3 * 256 + o4
 
-type UserID = Int
-
-genIP :: Int -> Int -> Int -> Int -> Int -> IP
-genIP o1 o2 o3 o4 = IP address
-    where
-    address = (o1 * (256^3)) + (o2 * (256^2)) + (o3 * 256) + o4
-
-genOctets :: IP -> (Int, Int, Int, Int)
-genOctets (IP a _) = (o1, o2, o3, o4)
+-- | Get the octets for a given IP
+getOctets :: IP -> (Int, Int, Int, Int)
+getOctets (IP a _) = (o1, o2, o3, o4)
     where
     o4 = a `mod` 256
     o3 = ((a - o4) `div` 256) `mod` 256
