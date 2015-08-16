@@ -82,7 +82,7 @@ proc3 = nub . map sortTuple . proc2 . addIndices
 proc4 ∷ Ord α ⇒ [(α, α)] → (α, α)
 proc4 xs = (minimum r, maximum r) where r = uncurry (++) $ unzip xs
 
-proc5 ∷ (Eq a, Foldable t, Foldable t') ⇒ t (a, t' a) → a → a
+proc5 ∷ (Eq α, Foldable τ, Foldable τ') ⇒ τ (α, τ' α) → α → α
 proc5 xs x
     | null z                = x
     | otherwise             = head z
@@ -105,7 +105,7 @@ proc6 pl = map h pl
     h (a, c@(Connection { connUID = uid }))
       = (a, c { connUID = UserID $ proc5 r4 $ getUID uid })
 
-range ∷ (Ord a, Foldable t, Traversable t) ⇒ t a → (a, a)
+range ∷ (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
 range xs = foldr1 cmp $ dupe <$> xs
   where cmp (a, b) (c, d) = (min a c, max b d)
 

@@ -27,23 +27,22 @@ whiteSpace = (∈ " \t")
 stripSpaces ∷ String → String
 stripSpaces = reverse ∘ dropWhile whiteSpace ∘ reverse
 
-mergeLoginsCore ∷ Int → [(α, ConnectType)] → [α]
-mergeLoginsCore _ [] = []
-mergeLoginsCore c ((t, CON) : xs)
-    | c ≡ 0                       = t : mergeLoginsCore 1 xs
-    | otherwise                   =     mergeLoginsCore (c + 1) xs
-mergeLoginsCore c ((t, DCN) : xs)
-    | c ≡ 0                       =     mergeLoginsCore 0 xs
-    | c ≡ 1                       = t : mergeLoginsCore 0 xs
-    | otherwise                   =     mergeLoginsCore (c - 1) xs
-
 toPairs ∷ [α] → [(α, α)]
 toPairs []       = []
 toPairs [_]      = []
 toPairs (x:y:xs) = (x, y) : toPairs xs
 
 mergeLogins ∷ [(α, ConnectType)] → [(α, α)]
-mergeLogins = toPairs ∘ mergeLoginsCore 0
+mergeLogins = toPairs ∘ merge 0
+  where
+    merge _ [] = []
+    merge c ((t, CON) : xs)
+      | c ≡ 0     = t : merge 1 xs
+      | otherwise =     merge (c + 1) xs
+    merge c ((t, DCN) : xs)
+      | c ≡ 0     =     merge 0 xs
+      | c ≡ 1     = t : merge 0 xs
+      | otherwise =     merge (c - 1) xs
 
 tsParseLine ∷ String → Maybe LogEntry
 tsParseLine s = do

@@ -18,14 +18,14 @@ import           Prelude.Unicode
 
 import           Utility.TSLogAnalyzer.Log
 
-data TSDate = TSDate { tsYear  :: Int
-                     , tsMonth :: Int
-                     , tsDay   :: Int
+data TSDate = TSDate { tsYear  ∷ Int
+                     , tsMonth ∷ Int
+                     , tsDay   ∷ Int
                      } deriving (Eq, Show, Read)
 
-data TSTime = TSTime { tsHour   :: Int
-                     , tsMinute :: Int
-                     , tsSecond :: Int
+data TSTime = TSTime { tsHour   ∷ Int
+                     , tsMinute ∷ Int
+                     , tsSecond ∷ Int
                      } deriving (Eq, Show, Read)
 
 timeParse ∷ Text → Maybe Time
@@ -67,7 +67,7 @@ timeParseCheck i = do
 
 
 {-
-tsDateParser :: Parser TSDate
+tsDateParser ∷ Parser TSDate
 tsDateParser = do
         year <- A.decimal
         _    <- A.char '-'
@@ -76,7 +76,7 @@ tsDateParser = do
         day  <- A.decimal
         return (TSDate year mon day)
 
-tsTimeParser :: Parser TSTime
+tsTimeParser ∷ Parser TSTime
 tsTimeParser = do
         hour <- A.decimal
         _    <- A.char ':'
@@ -85,26 +85,26 @@ tsTimeParser = do
         sec  <- A.decimal
         return (TSTime hour min sec)
 
-tParser :: Parser Time
+tParser ∷ Parser Time
 tParser = do
         dt <- tsDateParser
         _  <- A.char ' '
         tm <- tsTimeParser
         return (convertTSTD dt tm)
 
-timeToSeconds :: TSTime -> Int
+timeToSeconds ∷ TSTime -> Int
 timeToSeconds (TSTime hr mn sc) = (hr*3600) + (mn*60) + sc
 
-dateToSeconds :: TSDate -> Int
+dateToSeconds ∷ TSDate -> Int
 dateToSeconds (TSDate yr mo dy) = yrsc + ((mody + dy) * 86400)
         where
         yrsc = (yr - 1970)*31557600
         mody = sum $ mapMaybe monthDays [1..mo]
 
-convertTSTD :: TSDate -> TSTime -> Int
+convertTSTD ∷ TSDate -> TSTime -> Int
 convertTSTD dt tm = (timeToSeconds tm) + (dateToSeconds dt)
 
-tsTimeChecker :: TSTime -> Bool
+tsTimeChecker ∷ TSTime -> Bool
 tsTimeChecker tm = and [hrT, mnT, scT]
         where
         TSTime hr mn sc = tm
@@ -112,14 +112,14 @@ tsTimeChecker tm = and [hrT, mnT, scT]
         mnT = mn ∈ [0..60]
         scT = sc ∈ [0..60]
 
-monthDays :: Int -> Maybe Int
+monthDays ∷ Int -> Maybe Int
 monthDays m
         | m ≡ 2                     = Just 28
         | m ∈ [4,6,9,11]            = Just 30
         | m ∈ [1,3,5,7,8,10,12]     = Just 31
         | otherwise                 = Nothing
 
-tsDateChecker :: TSDate -> Bool
+tsDateChecker ∷ TSDate -> Bool
 tsDateChecker td = and [yrT, moT, dyT]
         where
         TSDate yr mo dy = td

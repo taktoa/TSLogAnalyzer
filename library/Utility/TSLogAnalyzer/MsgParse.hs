@@ -8,18 +8,6 @@ import qualified Data.Attoparsec.Text      as A
 import           Data.Text                 (Text)
 import           Utility.TSLogAnalyzer.Log
 
-
--- octetParse :: Parser (Int, Int, Int, Int)
--- octetParse = do
---         o1 <- A.decimal
---         _ <-  A.char '.'
---         o2 <- A.decimal
---         _ <-  A.char '.'
---         o3 <- A.decimal
---         _ <-  A.char '.'
---         o4 <- A.decimal
---         return (o1, o2, o3, o4)
-
 ipParse ∷ Parser IP
 ipParse = do
         (o1, o2, o3, o4) <- octetParse

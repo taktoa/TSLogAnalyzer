@@ -14,25 +14,25 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
 
 import           Data.Text (Text)
 
-data LogEntry = LogEntry { entryTime    :: Time
-                         , entryLevel   :: LogLevel
-                         , entrySource  :: LogSource
-                         , entryMessage :: Text
+data LogEntry = LogEntry { entryTime    ∷ Time
+                         , entryLevel   ∷ LogLevel
+                         , entrySource  ∷ LogSource
+                         , entryMessage ∷ Text
                          } deriving (Eq, Show, Read)
 
-data Connection = Connection { connType   :: ConnectType
-                             , connName   :: Text
-                             , connUID    :: UserID
-                             , connIP     :: Maybe IP
-                             , connReason :: Maybe Text
+data Connection = Connection { connType   ∷ ConnectType
+                             , connName   ∷ Text
+                             , connUID    ∷ UserID
+                             , connIP     ∷ Maybe IP
+                             , connReason ∷ Maybe Text
                              } deriving (Eq, Show, Read)
 
-data Session = Session { sessStart  :: Time
-                       , sessEnd    :: Time
-                       , sessName   :: Text
-                       , sessUID    :: UserID
-                       , sessIP     :: IP
-                       , sessReason :: Text
+data Session = Session { sessStart  ∷ Time
+                       , sessEnd    ∷ Time
+                       , sessName   ∷ Text
+                       , sessUID    ∷ UserID
+                       , sessIP     ∷ IP
+                       , sessReason ∷ Text
                        } deriving (Eq, Show, Read)
 
 data LogLevel   = DEVELOP
@@ -67,14 +67,14 @@ data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read)
 
-newtype Time = Time { getUnixTime :: Int }
+newtype Time = Time { getUnixTime ∷ Int }
              deriving (Eq, Ord, Show, Read)
 
-newtype UserID = UserID { getUID :: Int }
+newtype UserID = UserID { getUID ∷ Int }
                deriving (Eq, Enum, Ord, Show, Read)
 
-data IP = IP { getAddr :: Int
-             , getPort :: Int
+data IP = IP { getAddr ∷ Int
+             , getPort ∷ Int
              } deriving (Read, Show, Eq)
 
 -- | Make an IP
