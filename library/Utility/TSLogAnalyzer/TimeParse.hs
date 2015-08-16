@@ -1,133 +1,79 @@
+{-# LANGUAGE NoImplicitPrelude         #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
-module  Utility.TSLogAnalyzer.TimeParse ( timeParse
-                                        , unixTSDate
-                                        , timeParseCheck
-                                        , TSDate (..)
-                                        , TSTime (..)
-                                        ) where
+-- module  Utility.TSLogAnalyzer.TimeParse ( timeParse
+--                                         , unixTSDate
+--                                         , timeParseCheck
+--                                         , TSDate (..)
+--                                         , TSTime (..)
+--                                         ) where
 
-import           Data.Text                 (Text, pack, unpack)
-import           Data.Time                 (UTCTime)
-import           Data.Time.Format          (TimeLocale (..), defaultTimeLocale,
-                                            formatTime, parseTimeM)
-import           System.Process            (readProcess)
-import           Text.Read                 (readMaybe)
+module  Utility.TSLogAnalyzer.TimeParse where
 
+
+import           ClassyPrelude
+import           Prelude                      (Read (..), read)
+
+import           Data.Attoparsec.Text         (Parser, decimal, parse)
+import           Data.Char                    (isDigit)
+import           Data.Maybe                   (fromJust)
+--import           Data.Text                  (Text, pack, unpack)
+import           Data.Time.Clock.POSIX        (utcTimeToPOSIXSeconds)
 import           Prelude.Unicode
 
+import           Text.ParserCombinators.ReadP
+
 import           Utility.TSLogAnalyzer.Log
+import           Utility.TSLogAnalyzer.Util
 
-data TSDate = TSDate { tsYear  ∷ Int
-                     , tsMonth ∷ Int
-                     , tsDay   ∷ Int
-                     } deriving (Eq, Show, Read)
+data TSDate = TSDate { tsYear       ∷ Int
+                     , tsMonth      ∷ Int
+                     , tsDay        ∷ Int
+                     , tsHour       ∷ Int
+                     , tsMinute     ∷ Int
+                     , tsSecond     ∷ Int
+                     , tsFractional ∷ Int
+                     } deriving (Eq)
 
-data TSTime = TSTime { tsHour   ∷ Int
-                     , tsMinute ∷ Int
-                     , tsSecond ∷ Int
-                     } deriving (Eq, Show, Read)
+instance Show TSDate where
+  show (TSDate yr mo dy hr mn sc fr) = unpack $ date <> " " <> time
+    where
+      date = sh 4 yr <> "-" <> sh 2 mo <> "-" <> sh 2 dy
+      time = sh 2 hr <> ":" <> sh 2 mn <> ":" <> sh 2 sc <> "." <> tshow fr
+      sh i k = let t = tshow k in replicate (i - length t) '0' <> t
 
-timeParse ∷ Text → Maybe Time
-timeParse t = Time <$> (readMaybe =<< rawTimeParse (unpack t))
+instance Read TSDate where
+  readsPrec _ = rd $ TSDate <$> numP <* hyphenP <*> numP <* hyphenP <*> numP
+                            <*  spaceP
+                            <*> numP <* colonP  <*> numP <* colonP  <*> numP
+                            <*  periodP
+                            <*> numP
+    where
+      rd = readP_to_S
+      hyphenP = char '-'
+      spaceP  = char ' '
+      colonP  = char ':'
+      periodP = char '.'
+      numP = read <$> munch1 isDigit
 
-timeFormat ∷ String
-timeFormat = "%Y-%m-%d %k:%M:%S%Q"
+timeParser ∷ Parser Time
+timeParser = toUnix ∘ readUTC ∘ tshow <$> tsDateParser
 
-rawTimeParse ∷ String → Maybe String
-rawTimeParse = castTime defaultTimeLocale timeFormat "%s"
-
-castTime ∷ TimeLocale → String → String → String → Maybe String
-castTime locale inputF outputF inputTime = format <$> parse inputTime
-        where
-          format ∷ UTCTime → String
-          format = formatTime locale outputF
-          parse ∷ String → Maybe UTCTime
-          parse  = parseTimeM True locale inputF
-
-unixTSDate ∷ IO (Text, Int)
-unixTSDate = do
-        r <- readProcess "date" ["+%Y-%m-%d %k:%M:%S|%s"] []
-        let (t, u) = span (≢ '|') r
-        return (pack (t ++ ".00000"), read $ tail u)
-
-renderTSDate ∷ Int → IO Text
-renderTSDate u = pack <$> readProcess "date" [ "+%Y-%m-%d %k:%M:%S.00000"
-                                             , "--date='" ++ show u ++ "'"
-                                             ] []
-
-timeParseCheck ∷ Int → IO ()
-timeParseCheck i = do
-        u <- renderTSDate i
-        let f = timeParse u
-        print i
-        print u
-        print f
-        print ((\(Time a) -> a - i) <$> f)
-
-
-{-
 tsDateParser ∷ Parser TSDate
-tsDateParser = do
-        year <- A.decimal
-        _    <- A.char '-'
-        mon  <- A.decimal
-        _    <- A.char '-'
-        day  <- A.decimal
-        return (TSDate year mon day)
+tsDateParser = mkTSDate <$> ((,,) <$> num <* hyphen <*> num <* hyphen <*> num)
+                        <*  space
+                        <*> ((,,) <$> num <* colon  <*> num <* colon  <*> num)
+                        <*  period
+                        <*> num
+  where
+    num  = decimal :: Parser Int
+    mkTSDate (yr, mo, dy) (hr, mn, sc) = TSDate yr mo dy hr mn sc
 
-tsTimeParser ∷ Parser TSTime
-tsTimeParser = do
-        hour <- A.decimal
-        _    <- A.char ':'
-        min  <- A.decimal
-        _    <- A.char ':'
-        sec  <- A.decimal
-        return (TSTime hour min sec)
+readUTC ∷ Text → UTCTime
+readUTC = fromJust ∘ readMay ∘ unpack
 
-tParser ∷ Parser Time
-tParser = do
-        dt <- tsDateParser
-        _  <- A.char ' '
-        tm <- tsTimeParser
-        return (convertTSTD dt tm)
-
-timeToSeconds ∷ TSTime -> Int
-timeToSeconds (TSTime hr mn sc) = (hr*3600) + (mn*60) + sc
-
-dateToSeconds ∷ TSDate -> Int
-dateToSeconds (TSDate yr mo dy) = yrsc + ((mody + dy) * 86400)
-        where
-        yrsc = (yr - 1970)*31557600
-        mody = sum $ mapMaybe monthDays [1..mo]
-
-convertTSTD ∷ TSDate -> TSTime -> Int
-convertTSTD dt tm = (timeToSeconds tm) + (dateToSeconds dt)
-
-tsTimeChecker ∷ TSTime -> Bool
-tsTimeChecker tm = and [hrT, mnT, scT]
-        where
-        TSTime hr mn sc = tm
-        hrT = hr ∈ [0..24]
-        mnT = mn ∈ [0..60]
-        scT = sc ∈ [0..60]
-
-monthDays ∷ Int -> Maybe Int
-monthDays m
-        | m ≡ 2                     = Just 28
-        | m ∈ [4,6,9,11]            = Just 30
-        | m ∈ [1,3,5,7,8,10,12]     = Just 31
-        | otherwise                 = Nothing
-
-tsDateChecker ∷ TSDate -> Bool
-tsDateChecker td = and [yrT, moT, dyT]
-        where
-        TSDate yr mo dy = td
-        yrT = yr ∈ [0..9999]
-        moT = mo ∈ [1..12]
-        dyT
-            | dy ∈ [1..28]      = True
-            | mo ≡ 2           = dy ∈ [29]
-            | mo ∈ [4,6,9,11]   = dy ∈ [29, 30]
-            | otherwise         = dy ∈ [29, 30, 31]
--}
+toUnix ∷ UTCTime → Time
+toUnix = mkTime ∘ truncate ∘ toNanos ∘ utcTimeToPOSIXSeconds
+  where
+    toNanos ∷ Num n ⇒ n → n
+    toNanos s = s * 1000000000

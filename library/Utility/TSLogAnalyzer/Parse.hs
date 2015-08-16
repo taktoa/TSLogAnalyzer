@@ -1,12 +1,14 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections     #-}
+
 module Utility.TSLogAnalyzer.Parse ( logParse
-                                   , parseLogs
+                                   , parseConns
                                    , mergeLogins
                                    ) where
 
-import           Data.List                       (sortBy)
+import           ClassyPrelude
 import           Data.Maybe                      (maybeToList)
 import           Data.Ord                        (comparing)
-import           Data.Text                       (pack)
 import           Text.Read
 
 import           Prelude.Unicode
@@ -44,16 +46,19 @@ mergeLogins = toPairs ∘ merge 0
       | c ≡ 1     = t : merge 0 xs
       | otherwise =     merge (c - 1) xs
 
+-- entryParse :: Parser LogEntry
+-- entryParse = LogEntry <$>
+
 tsParseLine ∷ String → Maybe LogEntry
 tsParseLine s = do
-        let ds = delimiter '|' s
-        es <- if length ds ≡ 5 then Just (map stripSpaces ds) else Nothing
-        let [timStr, levStr, srcStr, _, _:msgStr] = es
-        tim <- timeParse (pack timStr)
-        lev <- readMaybe levStr
-        src <- readMaybe srcStr
-        msg <- Just (pack (msgStr ++ ";"))
-        return (LogEntry tim lev src msg)
+       let ds = delimiter '|' s
+       es <- if length ds ≡ 5 then Just (map stripSpaces ds) else Nothing
+       let [timStr, levStr, srcStr, _, _:msgStr] = es
+       tim <- undefined timeParse timStr
+       lev <- readMaybe levStr
+       src <- readMaybe srcStr
+       msg <- Just (pack (msgStr ++ ";"))
+       return (LogEntry tim lev src msg)
 
 tsParseLines ∷ String → [LogEntry]
 tsParseLines = sortBy (comparing entryTime)
@@ -61,13 +66,11 @@ tsParseLines = sortBy (comparing entryTime)
              ∘ map (maybeToList ∘ tsParseLine)
              ∘ lines
 
-parseLog ∷ LogEntry → Maybe (Time, Connection)
-parseLog (LogEntry t _ _ m) = do
-        c <- connParse m
-        return (t, c)
-
-parseLogs ∷ [LogEntry] → [(Time, Connection)]
-parseLogs = concat ∘ map (maybeToList ∘ parseLog)
+parseConns ∷ [LogEntry] → [(Time, Connection)]
+parseConns = concatMap $ maybeToList ∘ parseConn
+  where
+    parseConn (LogEntry t INFO VirtualServerBase m) = (t,) <$> connParse m
+    parseConn _                                     = Nothing
 
 logParse ∷ FilePath → IO [LogEntry]
 logParse fp = tsParseLines <$> readFile fp

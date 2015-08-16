@@ -127,11 +127,17 @@ range xs = foldr1 cmp $ dupe <$> xs
 -- let map3 = Map.mapWithKey (\k x → k : (f x map2)) map1
 -- sequence (map print (sortBy (comparing fst) $ (filter (\(_, x) → userName x ≡ pack "taktoa") $ r7)))
 
+generateAliases ∷ FilePath → IO ()
+generateAliases fp = do
+  logs <- parseConns <$> logParse fp
+
+  return ()
+
 main ∷ IO ()
 main = do
   args <- getArgs
   let fp = if null args then error "No file specified" else head args
-  logs <- parseLogs <$> logParse fp
+  logs <- parseConns <$> logParse fp
   mapM_ print logs
 
 --  sequence (map print (sortBy (comparing fst) $ (filter (\(_, x) → userID x ≡ 128) $ r)))

@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
 
 module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  , Connection  (..)
@@ -7,12 +8,13 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  , LogSource   (..)
                                  , ConnectType (..)
                                  , Time        (..)
+                                 , mkTime
                                  , UserID      (..)
                                  , IP          (..)
                                  , mkIP, getOctets
                                  ) where
 
-import           Data.Text (Text)
+import           ClassyPrelude
 
 data LogEntry = LogEntry { entryTime    ∷ Time
                          , entryLevel   ∷ LogLevel
@@ -67,8 +69,11 @@ data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read)
 
-newtype Time = Time { getUnixTime ∷ Int }
+newtype Time = Time { getUnixNanoseconds ∷ Int }
              deriving (Eq, Ord, Show, Read)
+
+mkTime ∷ Int → Time
+mkTime = Time
 
 newtype UserID = UserID { getUID ∷ Int }
                deriving (Eq, Enum, Ord, Show, Read)

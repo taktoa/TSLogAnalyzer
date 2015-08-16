@@ -15,6 +15,7 @@ tested-with:            GHC == 7.10
 
 library
     build-depends:      base <5
+                      , classy-prelude
                       , containers
                       , process
                       , time
@@ -29,6 +30,7 @@ library
                       , configurator
     default-language:   Haskell2010
     exposed-modules:    Utility.TSLogAnalyzer
+                      , Utility.TSLogAnalyzer.Util
                       , Utility.TSLogAnalyzer.Log
                       , Utility.TSLogAnalyzer.Parse
                       , Utility.TSLogAnalyzer.MsgParse
