@@ -7,7 +7,7 @@ data LogEntry = LogEntry {
                     level   :: LogLevel,
                     source  :: LogSource,
                     message :: Text
-                } deriving (Read, Show, Eq)
+                } deriving (Eq, Show, Read)
 
 data Connection = Connection {
                     connType :: ConnectType,
@@ -15,7 +15,7 @@ data Connection = Connection {
                     userID   :: Int,
                     userIP   :: Maybe IP,
                     reason   :: Maybe Text
-                } deriving (Read, Show, Eq)
+                } deriving (Eq, Show, Read)
 
 data Session = Session {
                     times :: (Time, Time),
@@ -23,14 +23,14 @@ data Session = Session {
                     id    :: Int,
                     ip    :: IP,
                     rsn   :: Text
-                } deriving (Read, Show, Eq)
+                } deriving (Eq, Show, Read)
 
 data LogLevel   = DEVELOP
                 | INFO
                 | WARNING
                 | ERROR
                 | CRITICAL
-                deriving (Read, Show, Eq, Ord, Enum)
+                deriving (Eq, Ord, Enum, Show, Read)
 
 data LogSource  = Accounting
                 | BanManager
@@ -50,12 +50,16 @@ data LogSource  = Accounting
                 | VirtualServer
                 | VirtualServerBase
                 | VirtualSvrMgr
-                deriving (Read, Show, Eq, Ord, Enum)
+                deriving (Eq, Ord, Enum, Show, Read)
 
 
-data ConnectType = DCN | CON deriving (Read, Show, Eq, Ord)
+data ConnectType = DCN
+                 | CON
+                 deriving (Eq, Ord, Enum, Show, Read)
 
-data IP = IP { addr :: Int, port :: Int } deriving (Read, Show, Eq)
+data IP = IP { addr :: Int
+             , port :: Int
+             } deriving (Read, Show, Eq)
 
 type Time = Int
 

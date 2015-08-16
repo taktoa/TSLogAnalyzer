@@ -14,13 +14,13 @@ import           Text.Read           (readMaybe)
 
 data TSDate = TSDate { year  :: Int
                      , month :: Int
-                     ,  day  :: Int
-                     }
+                     , day   :: Int
+                     } deriving (Eq, Show, Read)
 
 data TSTime = TSTime { hour   :: Int
                      , minute :: Int
                      , second :: Int
-                     }
+                     } deriving (Eq, Show, Read)
 
 timeFormat :: String
 timeFormat = "%Y-%m-%d %k:%M:%S%Q"
