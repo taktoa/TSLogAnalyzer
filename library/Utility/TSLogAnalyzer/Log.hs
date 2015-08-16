@@ -1,28 +1,28 @@
-module Log where
-import Data.Text (Text)
-import Prelude.Unicode
+module Utility.TSLogAnalyzer.Log where
+import           Data.Text       (Text)
+import           Prelude.Unicode
 
 data LogEntry = LogEntry {
-                    time ∷ Time,
-                    level ∷ LogLevel,
-                    source ∷ LogSource,
-                    message ∷ Text
+                    time    :: Time,
+                    level   :: LogLevel,
+                    source  :: LogSource,
+                    message :: Text
                 } deriving (Read, Show, Eq)
 
 data Connection = Connection {
-                    connType ∷ ConnectType,
-                    userName ∷ Text,
-                    userID ∷ Int,
-                    userIP ∷ Maybe IP,
-                    reason ∷ Maybe Text
+                    connType :: ConnectType,
+                    userName :: Text,
+                    userID   :: Int,
+                    userIP   :: Maybe IP,
+                    reason   :: Maybe Text
                 } deriving (Read, Show, Eq)
 
 data Session = Session {
-                    times ∷ (Time, Time),
-                    name ∷ Text,
-                    id ∷ Int,
-                    ip ∷ IP,
-                    rsn ∷ Text
+                    times :: (Time, Time),
+                    name  :: Text,
+                    id    :: Int,
+                    ip    :: IP,
+                    rsn   :: Text
                 } deriving (Read, Show, Eq)
 
 data LogLevel   = DEVELOP
@@ -55,18 +55,18 @@ data LogSource  = Accounting
 
 data ConnectType = DCN | CON deriving (Read, Show, Eq, Ord)
 
-data IP = IP { addr ∷ Int, port ∷ Int } deriving (Read, Show, Eq)
+data IP = IP { addr :: Int, port :: Int } deriving (Read, Show, Eq)
 
 type Time = Int
 
 type UserID = Int
 
-genIP ∷ Int → Int → Int → Int → Int → IP
+genIP :: Int → Int → Int → Int → Int → IP
 genIP o1 o2 o3 o4 = IP address
     where
     address = (o1 * (256^3)) + (o2 * (256^2)) + (o3 * 256) + o4
 
-genOctets ∷ IP → (Int, Int, Int, Int)
+genOctets :: IP → (Int, Int, Int, Int)
 genOctets (IP a _) = (o1, o2, o3, o4)
     where
     o4 = a `mod` 256
