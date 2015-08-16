@@ -3,75 +3,84 @@
 -- | Parse a log message
 module Utility.TSLogAnalyzer.MsgParse (connParse) where
 
-import           Data.Attoparsec.Text      (Parser)
+import           Data.Attoparsec.Text      (Parser, char, decimal, string,
+                                            takeTill)
 import qualified Data.Attoparsec.Text      as A
 import           Data.Text                 (Text)
 import           Utility.TSLogAnalyzer.Log
 
+import           Control.Monad             (void)
+
+import           Prelude.Unicode
+
+singleQuote, doubleQuote ∷ Parser ()
+openParen, closeParen    ∷ Parser ()
+colon, semicolon, period ∷ Parser ()
+
+singleQuote = void $ char '\''
+doubleQuote = void $ char '"'
+openParen   = void $ char '('
+closeParen  = void $ char ')'
+colon       = void $ char ':'
+semicolon   = void $ char ';'
+period      = void $ char '.'
+
+inParens ∷ Parser a → Parser a
+inParens p = openParen *> p <* closeParen
+
+untilSingleQuote ∷ Parser Text
+untilSingleQuote = takeTill (≡ '\'')
+
 ipParse ∷ Parser IP
-ipParse = do
-        (o1, o2, o3, o4) <- octetParse
-        _ <- A.char ':'
-        p <- A.decimal
-        _ <- A.char ';'
-        return (mkIP (o1, o2, o3, o4) p)
+ipParse = mkIP <$> octetParse
+               <*  colon
+               <*> decimal
 
 octetParse ∷ Parser (Int, Int, Int, Int)
-octetParse = (,,,) <$> A.decimal
-                   <*  A.char '.'
-                   <*> A.decimal
-                   <*  A.char '.'
-                   <*> A.decimal
-                   <*  A.char '.'
-                   <*> A.decimal
+octetParse = (,,,) <$> decimal
+                   <*  period
+                   <*> decimal
+                   <*  period
+                   <*> decimal
+                   <*  period
+                   <*> decimal
 
 nameParse ∷ Parser Text
-nameParse = do
-        _ <- A.char '\''
-        uname <- A.takeTill (== '\'')
-        _ <- A.char '\''
-        return uname
+nameParse = singleQuote *> untilSingleQuote <* singleQuote
 
-uidParse ∷ Parser Int
-uidParse = do
-        _ <- A.string "(id:"
-        uid <- A.decimal
-        _ <- A.string ")"
-        return  uid
-
-unidParse ∷ Parser (Text, UserID)
-unidParse = do
-        nm <- nameParse
-        uid <- uidParse
-        return (nm, UserID uid)
+uidParse ∷ Parser UserID
+uidParse = UserID <$> inParens (string "id" <* colon *> decimal)
 
 rsnParse ∷ Parser Text
-rsnParse = do
-        _ <- A.char '\''
-        _ <- A.string "reasonmsg="
-        r <- A.takeTill (== '\'')
-        _ <- A.char '\''
-        _ <- A.char ';'
-        return r
+rsnParse =     singleQuote
+           <*  string "reasonmsg="
+            *> untilSingleQuote
+           <*  singleQuote
+
+mkDCN ∷ Text → UserID → Text → Connection
+mkDCN name uid rsn = Connection DCN name uid Nothing   (Just rsn)
+
+mkCON ∷ Text → UserID → IP → Connection
+mkCON name uid ip  = Connection CON name uid (Just ip) Nothing
 
 dcnParser ∷ Parser Connection
-dcnParser = do
-        _ <- A.string "client disconnected "
-        (nm, uid) <- unidParse
-        _ <- A.string " reason "
-        rsn <- rsnParse
-        return (Connection DCN nm uid Nothing (Just rsn))
+dcnParser = string "client disconnected " >>
+            mkDCN <$> nameParse
+                  <*> uidParse
+                  <*  string " reason "
+                  <*> rsnParse
+                  <*  semicolon
 
 conParser ∷ Parser Connection
-conParser = do
-        _ <- A.string "client connected "
-        (nm, uid) <- unidParse
-        _ <- A.string " from "
-        ip <- ipParse
-        return (Connection CON nm uid (Just ip) Nothing)
+conParser = string "client connected " >>
+            mkCON <$> nameParse
+                  <*> uidParse
+                  <*  string " from "
+                  <*> ipParse
+                  <*  semicolon
 
-cParser ∷ Parser Connection
-cParser = A.choice [conParser, dcnParser]
+connectionParser ∷ Parser Connection
+connectionParser = A.choice [conParser, dcnParser]
 
 connParse ∷ Text → Maybe Connection
-connParse = A.maybeResult . A.parse cParser
+connParse = A.maybeResult . A.parse connectionParser

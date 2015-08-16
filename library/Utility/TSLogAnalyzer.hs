@@ -109,12 +109,12 @@ range ∷ (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
 range xs = foldr1 cmp $ dupe <$> xs
   where cmp (a, b) (c, d) = (min a c, max b d)
 
-processor ∷ FilePath → IO ()
-processor fp = do
-  r4 <- proc6 . parseLogs <$> logParse fp
-  let userIDs = (\(a, b) -> [a .. b]) $ range $ map (connUID . snd) r4
-  let idf y = filter ((≡ y) . snd) $ map ((connName &&& connUID) . snd) r4
-  mapM_ print $ sortBy (comparing fst) $ mapMaybe trans $ tail $ nub $ map (nub . idf) userIDs
+-- processor ∷ FilePath → IO ()
+-- processor fp = do
+--   r4 <- proc6 . parseLogs <$> logParse fp
+--   let userIDs = (\(a, b) -> [a .. b]) $ range $ map (connUID . snd) r4
+--   let idf y = filter ((≡ y) . snd) $ map ((connName &&& connUID) . snd) r4
+--   mapM_ print $ sortBy (comparing fst) $ mapMaybe trans $ tail $ nub $ map (nub . idf) userIDs
 
 -- let r5 = r4
 -- let r6 = M.fromList $ (flip zip) [1..] $ sort $ nub $ map (userID . snd) r5
@@ -129,10 +129,10 @@ processor fp = do
 
 main ∷ IO ()
 main = do
-        args <- getArgs
-        let fp = if null args then error "No file specified" else head args
-        processor fp
-        putStrLn "hi"
+  args <- getArgs
+  let fp = if null args then error "No file specified" else head args
+  logs <- parseLogs <$> logParse fp
+  mapM_ print logs
 
 --  sequence (map print (sortBy (comparing fst) $ (filter (\(_, x) → userID x ≡ 128) $ r)))
 --  print (S.fromList (map S.fromList (map (\y → map (userName . snd) (filter (\(_, x) → userID x ≡ y) r)) [1..205])))

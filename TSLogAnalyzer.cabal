@@ -47,4 +47,4 @@ executable TSLogAnalyzer
     ghc-prof-options:   -auto-all -prof
     hs-source-dirs:     executable
     main-is:            Main.hs
-    default-extensions: OverloadedStrings
+    default-extensions: UnicodeSyntax
