@@ -26,12 +26,12 @@ library
                       , array
                       , process
     default-language:   Haskell2010
-    exposed-modules:    TSLogAnalyzer
-                      , Processor
-                      , Log
-                      , Parse
-                      , MsgParse
-                      , TimeParse
+    exposed-modules:    Utility.TSLogAnalyzer
+                      , Utility.TSLogAnalyzer.Processor
+                      , Utility.TSLogAnalyzer.Log
+                      , Utility.TSLogAnalyzer.Parse
+                      , Utility.TSLogAnalyzer.MsgParse
+                      , Utility.TSLogAnalyzer.TimeParse
     ghc-options:        -Wall
     ghc-prof-options:   -auto-all -prof
     hs-source-dirs:     library
