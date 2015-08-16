@@ -1,11 +1,9 @@
 columns: 80
 steps:
-- imports:
-    align: global
-- language_pragmas:
-    remove_redundant: true
-    style: vertical
-- records: {}
-- tabs:
-    spaces: 4
-- trailing_whitespace: {}
+  - imports:             { align: global }
+  - language_pragmas:    { remove_redundant: true, style: vertical }
+  - tabs:                { spaces: 4 }
+  - records:             {}
+  - trailing_whitespace: {}
+language_extensions:
+  - UnicodeSyntax

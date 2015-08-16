@@ -28,7 +28,6 @@ import           Utility.TSLogAnalyzer
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.MsgParse
 import           Utility.TSLogAnalyzer.Parse
-import           Utility.TSLogAnalyzer.Processor
 import           Utility.TSLogAnalyzer.TimeParse
 
 extractIDIP :: Connection -> Maybe (UserID, Set Int)

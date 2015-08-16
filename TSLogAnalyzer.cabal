@@ -27,7 +27,6 @@ library
                       , process
     default-language:   Haskell2010
     exposed-modules:    Utility.TSLogAnalyzer
-                      , Utility.TSLogAnalyzer.Processor
                       , Utility.TSLogAnalyzer.Log
                       , Utility.TSLogAnalyzer.Parse
                       , Utility.TSLogAnalyzer.MsgParse
