@@ -1,66 +1,70 @@
-{-# NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module  Utility.TSLogAnalyzer.TimeParse ( timeParse
                                         , unixTSDate
                                         , timeParseCheck
+                                        , TSDate (..)
+                                        , TSTime (..)
                                         ) where
 
-import           Control.Applicative       ((<$>))
-import           Data.Maybe                (mapMaybe, maybe, maybeToList)
 import           Data.Text                 (Text, pack, unpack)
-import           Data.Time.Format          (FormatTime, ParseTime, formatTime,
-                                            parseTime)
-import           System.Locale             (TimeLocale, defaultTimeLocale)
+import           Data.Time                 (UTCTime)
+import           Data.Time.Format          (TimeLocale (..), defaultTimeLocale,
+                                            formatTime, parseTimeM)
 import           System.Process            (readProcess)
 import           Text.Read                 (readMaybe)
 
+import           Prelude.Unicode
+
 import           Utility.TSLogAnalyzer.Log
 
-data TSDate = TSDate { year  :: Int
-                     , month :: Int
-                     , day   :: Int
+data TSDate = TSDate { tsYear  :: Int
+                     , tsMonth :: Int
+                     , tsDay   :: Int
                      } deriving (Eq, Show, Read)
 
-data TSTime = TSTime { hour   :: Int
-                     , minute :: Int
-                     , second :: Int
+data TSTime = TSTime { tsHour   :: Int
+                     , tsMinute :: Int
+                     , tsSecond :: Int
                      } deriving (Eq, Show, Read)
 
-timeFormat :: String
+timeParse ∷ Text → Maybe Time
+timeParse t = Time <$> (readMaybe =<< rawTimeParse (unpack t))
+
+timeFormat ∷ String
 timeFormat = "%Y-%m-%d %k:%M:%S%Q"
 
-timeParse :: Text -> Maybe Time
-timeParse t = (rawTimeParse $ unpack t) >>= readMaybe
-
-rawTimeParse :: String -> Maybe String
+rawTimeParse ∷ String → Maybe String
 rawTimeParse = castTime defaultTimeLocale timeFormat "%s"
 
-castTime :: TimeLocale -> String -> String -> String -> Maybe String
-castTime l i o t = format <$> parse
+castTime ∷ TimeLocale → String → String → String → Maybe String
+castTime locale inputF outputF inputTime = format <$> parse inputTime
         where
-        format = formatTime l o :: (ParseTime t, FormatTime t) => t -> String
-        parse = parseTime l i t :: ParseTime t => Maybe t
+          format ∷ UTCTime → String
+          format = formatTime locale outputF
+          parse ∷ String → Maybe UTCTime
+          parse  = parseTimeM True locale inputF
 
-unixTSDate :: IO (Text, Int)
+unixTSDate ∷ IO (Text, Int)
 unixTSDate = do
         r <- readProcess "date" ["+%Y-%m-%d %k:%M:%S|%s"] []
-        let (t, u) = span (/= '|') r
+        let (t, u) = span (≢ '|') r
         return (pack (t ++ ".00000"), read $ tail u)
 
-renderTSDate :: Int -> IO Text
-renderTSDate u = pack <$> readProcess "date" [p, ps] []
-        where
-        ps = "+%Y-%m-%d %k:%M:%S.00000"
-        p = "--date='" ++ (show u) ++ "'"
+renderTSDate ∷ Int → IO Text
+renderTSDate u = pack <$> readProcess "date" [ "+%Y-%m-%d %k:%M:%S.00000"
+                                             , "--date='" ++ show u ++ "'"
+                                             ] []
 
-timeParseCheck :: Int -> IO ()
+timeParseCheck ∷ Int → IO ()
 timeParseCheck i = do
         u <- renderTSDate i
         let f = timeParse u
         print i
         print u
         print f
-        print ((\a -> a - i) <$> f)
+        print ((\(Time a) -> a - i) <$> f)
+
 
 {-
 tsDateParser :: Parser TSDate
@@ -110,7 +114,7 @@ tsTimeChecker tm = and [hrT, mnT, scT]
 
 monthDays :: Int -> Maybe Int
 monthDays m
-        | m == 2                    = Just 28
+        | m ≡ 2                     = Just 28
         | m ∈ [4,6,9,11]            = Just 30
         | m ∈ [1,3,5,7,8,10,12]     = Just 31
         | otherwise                 = Nothing
@@ -123,7 +127,7 @@ tsDateChecker td = and [yrT, moT, dyT]
         moT = mo ∈ [1..12]
         dyT
             | dy ∈ [1..28]      = True
-            | mo == 2           = dy ∈ [29]
+            | mo ≡ 2           = dy ∈ [29]
             | mo ∈ [4,6,9,11]   = dy ∈ [29, 30]
             | otherwise         = dy ∈ [29, 30, 31]
 -}

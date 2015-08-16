@@ -16,14 +16,15 @@ tested-with:            GHC == 7.10
 library
     build-depends:      base <5
                       , containers
-                      , old-locale
                       , process
                       , time
 
                       , base-unicode-symbols
                       , containers-unicode-symbols
-                      
+
+                      , mtl
                       , text
+                      , extra
                       , attoparsec
                       , configurator
     default-language:   Haskell2010

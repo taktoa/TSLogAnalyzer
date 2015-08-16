@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  , Connection  (..)
                                  , Session     (..)
@@ -20,7 +22,7 @@ data LogEntry = LogEntry { entryTime    :: Time
 
 data Connection = Connection { connType   :: ConnectType
                              , connName   :: Text
-                             , connUID    :: Int
+                             , connUID    :: UserID
                              , connIP     :: Maybe IP
                              , connReason :: Maybe Text
                              } deriving (Eq, Show, Read)
@@ -28,7 +30,7 @@ data Connection = Connection { connType   :: ConnectType
 data Session = Session { sessStart  :: Time
                        , sessEnd    :: Time
                        , sessName   :: Text
-                       , sessUID    :: Int
+                       , sessUID    :: UserID
                        , sessIP     :: IP
                        , sessReason :: Text
                        } deriving (Eq, Show, Read)
@@ -65,22 +67,22 @@ data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read)
 
-newtype Time = Time Int
+newtype Time = Time { getUnixTime :: Int }
              deriving (Eq, Ord, Show, Read)
 
-newtype UserID = UserID Int
-               deriving (Eq, Ord, Show, Read)
+newtype UserID = UserID { getUID :: Int }
+               deriving (Eq, Enum, Ord, Show, Read)
 
 data IP = IP { getAddr :: Int
              , getPort :: Int
              } deriving (Read, Show, Eq)
 
 -- | Make an IP
-mkIP :: (Int, Int, Int, Int) -> Int -> IP
+mkIP ∷ (Int, Int, Int, Int) → Int → IP
 mkIP (o1, o2, o3, o4) = IP $ o1 * (256^3) + o2 * (256^2) + o3 * 256 + o4
 
 -- | Get the octets for a given IP
-getOctets :: IP -> (Int, Int, Int, Int)
+getOctets ∷ IP → (Int, Int, Int, Int)
 getOctets (IP a _) = (o1, o2, o3, o4)
     where
     o4 = a `mod` 256

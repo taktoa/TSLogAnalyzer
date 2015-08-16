@@ -20,7 +20,7 @@ import           Utility.TSLogAnalyzer.Log
 --         o4 <- A.decimal
 --         return (o1, o2, o3, o4)
 
-ipParse :: Parser IP
+ipParse ∷ Parser IP
 ipParse = do
         (o1, o2, o3, o4) <- octetParse
         _ <- A.char ':'
@@ -28,7 +28,7 @@ ipParse = do
         _ <- A.char ';'
         return (mkIP (o1, o2, o3, o4) p)
 
-octetParse :: Parser (Int, Int, Int, Int)
+octetParse ∷ Parser (Int, Int, Int, Int)
 octetParse = (,,,) <$> A.decimal
                    <*  A.char '.'
                    <*> A.decimal
@@ -37,27 +37,27 @@ octetParse = (,,,) <$> A.decimal
                    <*  A.char '.'
                    <*> A.decimal
 
-nameParse :: Parser Text
+nameParse ∷ Parser Text
 nameParse = do
         _ <- A.char '\''
         uname <- A.takeTill (== '\'')
         _ <- A.char '\''
         return uname
 
-uidParse :: Parser Int
+uidParse ∷ Parser Int
 uidParse = do
         _ <- A.string "(id:"
         uid <- A.decimal
         _ <- A.string ")"
         return  uid
 
-unidParse :: Parser (Text, Int)
+unidParse ∷ Parser (Text, UserID)
 unidParse = do
         nm <- nameParse
         uid <- uidParse
-        return (nm, uid)
+        return (nm, UserID uid)
 
-rsnParse :: Parser Text
+rsnParse ∷ Parser Text
 rsnParse = do
         _ <- A.char '\''
         _ <- A.string "reasonmsg="
@@ -66,7 +66,7 @@ rsnParse = do
         _ <- A.char ';'
         return r
 
-dcnParser :: Parser Connection
+dcnParser ∷ Parser Connection
 dcnParser = do
         _ <- A.string "client disconnected "
         (nm, uid) <- unidParse
@@ -74,7 +74,7 @@ dcnParser = do
         rsn <- rsnParse
         return (Connection DCN nm uid Nothing (Just rsn))
 
-conParser :: Parser Connection
+conParser ∷ Parser Connection
 conParser = do
         _ <- A.string "client connected "
         (nm, uid) <- unidParse
@@ -82,8 +82,8 @@ conParser = do
         ip <- ipParse
         return (Connection CON nm uid (Just ip) Nothing)
 
-cParser :: Parser Connection
+cParser ∷ Parser Connection
 cParser = A.choice [conParser, dcnParser]
 
-connParse :: Text -> Maybe Connection
+connParse ∷ Text → Maybe Connection
 connParse = A.maybeResult . A.parse cParser
