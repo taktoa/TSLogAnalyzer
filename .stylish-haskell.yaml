@@ -1,5 +1,6 @@
 columns: 80
 steps:
+  - unicode_syntax:      { add_language_pragma: false }
   - imports:             { align: global }
   - language_pragmas:    { remove_redundant: true, style: vertical }
   - tabs:                { spaces: 4 }
