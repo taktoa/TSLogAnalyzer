@@ -17,7 +17,6 @@ import           Prelude                      (Read (..), read)
 import           Data.Attoparsec.Text         (Parser, decimal, parse)
 import           Data.Char                    (isDigit)
 import           Data.Maybe                   (fromJust)
---import           Data.Text                  (Text, pack, unpack)
 import           Data.Time.Clock.POSIX        (utcTimeToPOSIXSeconds)
 import           Prelude.Unicode
 

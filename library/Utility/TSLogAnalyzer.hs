@@ -1,21 +1,30 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE NoImplicitPrelude         #-}
+{-# LANGUAGE ViewPatterns              #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TupleSections             #-}
 
 -- | TODO
 module Utility.TSLogAnalyzer (module Utility.TSLogAnalyzer) where
 
 import           Control.Arrow                   ((&&&))
 
+import qualified Data.Foldable                   as F
+import qualified Data.Traversable                as T
+
 import qualified Data.Graph                      as G
 import qualified Data.List                       as L
-import qualified Data.Map                        as M
+import qualified Data.Map.Strict                 as M
 import qualified Data.Set                        as S
-import qualified Data.Tree                       as T
 
-import           Data.Foldable
+import           Data.ListLike                   (ListLike)
+import qualified Data.ListLike                   as LL
 
-import           Data.List                       (nub, sort, sortBy)
-import           Data.Map                        (Map)
+
+import           Data.Map.Strict                 (Map)
 import           Data.Maybe                      (fromMaybe, mapMaybe,
                                                   maybeToList)
 import           Data.Ord                        (comparing)
@@ -24,126 +33,112 @@ import           Data.Set.Unicode                ((∩), (∪))
 import           Data.Text                       (pack)
 import           Data.Tuple.Extra                (dupe)
 
-import           Control.Monad.State.Lazy
+import           Control.Monad.State.Lazy        (State, runState, execState, modify, put, get, 
+                                                  state)
 
+import           ClassyPrelude
 import           Prelude.Unicode
 
-import           System.Environment              (getArgs)
+import Extra (snd3)
 
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.MsgParse
 import           Utility.TSLogAnalyzer.Parse
 import           Utility.TSLogAnalyzer.TimeParse
 
-extractIDIP ∷ Connection → Maybe (UserID, Set Int)
-extractIDIP (Connection _ _ uid (Just (IP ip _)) _) = Just (uid, wr ip)
-extractIDIP _ = Nothing
-
-extractIPID ∷ Connection → Maybe (Int, Set UserID)
-extractIPID (Connection _ _ uid (Just (IP ip _)) _) = Just (ip, wr uid)
-extractIPID _ = Nothing
-
-extractIDIPs ∷ [Connection] → Map UserID (Set Int)
-extractIDIPs = M.fromListWith (∪) . mapMaybe extractIDIP
-
-extractIPIDs ∷ [Connection] → Map Int (Set UserID)
-extractIPIDs = M.fromListWith (∪) . mapMaybe extractIPID
-
-addIndices ∷ [Set UserID] → [(Int, Set UserID)]
-addIndices = zip [1..]
-
-sortTuple ∷ Ord α ⇒ (α, α) → (α, α)
-sortTuple (i1, i2) = if i1 > i2 then (i2, i1) else (i1, i2)
-
-trans ∷ [(α, β)] → Maybe (β, [α])
-trans [] = Nothing
-trans xs = Just (snd $ head xs, map fst xs)
-
 (!@) ∷ Ord κ ⇒ Map κ α → κ → Maybe α
 a !@ b = M.lookup b a
 
-ø ∷ Set α
-ø = S.empty
+ø ∷ Monoid μ ⇒ μ
+ø = mempty
 
-wr ∷ α → Set α
-wr = S.singleton
-
-proc1 ∷ Ord β ⇒ (α, Set β) → (α, Set β) → [(α, α)]
-proc1 (i1, s1) (i2, s2)
-    | (s1 ∩ s2) ≢ ø             = [(i1, i2)]
-    | otherwise                 = []
-
-proc2 ∷ (Ord β, Foldable τ) ⇒ τ (α, Set β) → [(α, α)]
-proc2 xs = concatMap ((`concatMap` xs) . proc1) xs
-
-proc3 ∷ [Set UserID] → [(Int, Int)]
-proc3 = nub . map sortTuple . proc2 . addIndices
-
-proc4 ∷ Ord α ⇒ [(α, α)] → (α, α)
-proc4 xs = (minimum r, maximum r) where r = uncurry (++) $ unzip xs
-
-proc5 ∷ (Eq α, Foldable τ, Foldable τ') ⇒ τ (α, τ' α) → α → α
-proc5 xs x
-    | null z                = x
-    | otherwise             = head z
-    where
-    z = concatMap (\(y, ys) → [y | x `elem` ys]) xs
-
-proc6 ∷ [(α, Connection)] → [(α, Connection)]
-proc6 pl = map h pl
-  where
-    cons = map snd pl
-    map1 = M.map S.toList $ extractIDIPs cons
-    map2 = M.map S.toList $ extractIPIDs cons
-    f m x = concat $ mapMaybe (m !@) x
-    g k x = S.fromList (k : f map2 x)
-    r1 = (\xs → [(a, b) | (a, b) <- xs, a ≡ b]) $ proc3 $ nub $ M.elems (M.mapWithKey g map1)
-    r2 = G.components $ G.buildG (proc4 r1) r1
-    r3 = filter ((> 1) . length . T.flatten) r2
-    isolate = head &&& sort . tail
-    r4 = map (isolate . concat . T.levels) r3
-    h (a, c@(Connection { connUID = uid }))
-      = (a, c { connUID = UserID $ proc5 r4 $ getUID uid })
+sing ∷ MonoPointed μ ⇒ Element μ → μ
+sing = opoint
 
 range ∷ (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
-range xs = foldr1 cmp $ dupe <$> xs
+range xs = F.foldr1 cmp $ dupe <$> xs
   where cmp (a, b) (c, d) = (min a c, max b d)
 
--- processor ∷ FilePath → IO ()
--- processor fp = do
---   r4 <- proc6 . parseLogs <$> logParse fp
---   let userIDs = (\(a, b) -> [a .. b]) $ range $ map (connUID . snd) r4
---   let idf y = filter ((≡ y) . snd) $ map ((connName &&& connUID) . snd) r4
---   mapM_ print $ sortBy (comparing fst) $ mapMaybe trans $ tail $ nub $ map (nub . idf) userIDs
+type IPAddr = (Int, Int, Int, Int)
+type AliasMap = Map UserID (Map UserName (Set IPAddr))
 
--- let r5 = r4
--- let r6 = M.fromList $ (flip zip) [1..] $ sort $ nub $ map (userID . snd) r5
--- let k (a, Connection c n id ip r) = do { i <- M.lookup id r6; return (a, Connection c n i ip r) }
--- let r7 = concatMap (maybeToList . k) r5
--- return r5
--- print r7
--- print (nub $ map (userID . snd) r7)
--- let f x m = concat . Set.toList . Set.map (maybeToList . Map.lookup m) x
--- let map3 = Map.mapWithKey (\k x → k : (f x map2)) map1
--- sequence (map print (sortBy (comparing fst) $ (filter (\(_, x) → userName x ≡ pack "taktoa") $ r7)))
-
-generateAliases ∷ FilePath → IO ()
+generateAliases ∷ FilePath → IO [(UserName, UserID, IPAddr)]
 generateAliases fp = do
   logs <- parseConns <$> logParse fp
+  return $ hashNub $ mapMaybe (process . snd) logs
+  where
+    process (Connection _ _    _   Nothing   _) = Nothing
+    process (Connection _ name uid (Just ip) _) = Just (name, uid, getOctets ip)
 
-  return ()
+printAliases ∷ AliasMap → IO ()
+printAliases = mapM_ (uncurry helper1) . M.toList
+  where
+    helper1 ∷ UserID → Map UserName (Set IPAddr) → IO ()
+    helper1 (UserID uid) m = do
+      putStrLn $ "UserID: " <> tshow uid
+      mapM_ (uncurry helper2) $ M.toList m
+    helper2 ∷ UserName → Set IPAddr → IO ()
+    helper2 (UserName name) s = do
+      putStrLn $ "  " <> "Name: " <> name
+      mapM_ (putStrLn . ("    " <>) . showIP) s
+    showIP (o1, o2, o3, o4) = tshow o1 <> "."
+                           <> tshow o2 <> "."
+                           <> tshow o3 <> "."
+                           <> tshow o4
+
+processAliases ∷ [(UserName, UserID, IPAddr)] → AliasMap
+processAliases xs = execState (mapM_ process xs) ø
+  where
+    process ∷ (UserName, UserID, IPAddr) → State AliasMap ()
+    process (n, u, i) = modify ((Just . process' n i) `M.alter` u)
+    process' name ip = M.insertWith (∪) name (sing ip) . fromMaybe ø
+
+type El a = Element a
+
+omergeBy ∷ IsSequence ς ⇒ (El ς → Bool) → (El ς → El ς → El ς) → ς → ς
+omergeBy filt comb xs = if   null trueVals
+                        then ø
+                        else ofoldr1Ex comb trueVals `cons` falseVals
+  where
+    (trueVals, falseVals) = partition filt xs
+
+
+mergeBy ∷ ListLike τ ɛ ⇒ (ɛ → Bool) → (ɛ → ɛ → ɛ) → τ → τ
+mergeBy filt comb xs = if   LL.null trueVals
+                       then ø
+                       else LL.foldr1 comb trueVals `LL.cons` falseVals
+  where
+    (trueVals, falseVals) = partitionFT filt xs
+
+partitionFT ∷ ListLike τ ɛ ⇒ (ɛ → Bool) → τ → (τ, τ)
+partitionFT p xs = execState (LL.mapM_ genState xs) (ø, ø)
+  where
+    genState e = modify (\(x, y) -> if p e
+                                    then (e `LL.cons` x, y)
+                                    else (x, e `LL.cons` y))
+
+genIPMap :: [(UserName, UserID, IPAddr)] -> Map IPAddr (Set UserID)
+genIPMap xs = execState (mapM_ mapper xs) ø
+  where
+    mapper (_, uid, ip) = modify $ M.insertWith (∪) ip $ sing uid
+
+mergeMatchingIPs ∷ [(UserName, UserID, IPAddr)] → Set (UserName, UserID, IPAddr)
+mergeMatchingIPs xs = S.fromList
+                    $ nubTriples
+                    $ fst
+                    $ flip runState ()
+                    $ mapM mapS xs
+  where
+    nubTriples = ordNubBy snd3 (\(a, x, _) (b, y, _) -> x == y && a == b)
+    mapS trip = return $ mapper trip
+    mapper trip@(name, _, ip) =
+      fromMaybe trip $ process name ip =<< lookup ip (genIPMap xs)
+    process name ip us = (,,) <$> Just name <*> minimumMay us <*> Just ip
+
 
 main ∷ IO ()
 main = do
-  args <- getArgs
-  let fp = if null args then error "No file specified" else head args
-  logs <- parseConns <$> logParse fp
-  mapM_ print logs
-
---  sequence (map print (sortBy (comparing fst) $ (filter (\(_, x) → userID x ≡ 128) $ r)))
---  print (S.fromList (map S.fromList (map (\y → map (userName . snd) (filter (\(_, x) → userID x ≡ y) r)) [1..205])))
---  sequence (map print (S.toList $ S.fromList $ map (\x → (snd (head x), S.fromList (map fst x))) (map (\y → map ((\x → (userName x, userID x)) . snd) (filter (\(_, x) → userID x ≡ y) r)) [1..205])))
---  sequence (map print (tail $ nub $ map S.fromList $ flip map [1..205] (\y → map ((\x → (userName x, userID x)) . snd) $ filter ((≡ y) . userID . snd) r)))
---  let trans xs = (snd $ head xs, map fst xs)
---  sequence (map print $ sortBy (comparing fst) $ map trans $ (tail $ nub $ map nub $ flip map [1..205] (\y → map ((\x → (userName x, userID x)) . snd) $ filter ((≡ y) . userID . snd) r)))
+  fp <- fromMaybe (error "No file specified") . headMay <$> getArgs
+  aliases <- generateAliases $ unpack fp
+  printAliases $ processAliases $ S.toList $ mergeMatchingIPs aliases
 

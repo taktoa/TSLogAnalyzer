@@ -28,22 +28,25 @@ comma       = void $ char ','
 hyphen      = void $ char '-'
 space       = void $ char ' '
 
+(~>) ∷ Monad μ ⇒ μ α → β → μ β
+a ~> b = a *> return b
+
 (<~>) ∷ Functor φ ⇒ (α → β) → (γ → φ α) → γ → φ β
 f <~> g = \x -> f <$> g x
 infixr 9 <~>
 
 
-data GenParser a where
-  GPPure   :: a → GenParser a
-  GPThen   :: GenParser (a → b) → GenParser a → GenParser b
-  GPChoose :: GenParser a → GenParser a → GenParser a
-  GPMany   :: GenParser a → GenParser [a]
+data GenParser α where
+  GPPure   :: α → GenParser a
+  GPThen   :: GenParser (α → β) → GenParser α → GenParser β
+  GPChoose :: GenParser α → GenParser α → GenParser α
+  GPMany   :: GenParser α → GenParser [α]
   GPPeek   :: GenParser Char
   GPChar   :: GenParser Char
-  GPString :: IsString s ⇒ GenParser s
-  GPLook   :: IsString s ⇒ GenParser s
+  GPString :: IsString ς ⇒ GenParser ς
+  GPLook   :: IsString ς ⇒ GenParser ς
 
-class Applicative a ⇒ IsParser a where {}
+class Applicative α ⇒ IsParser α where {}
 
 -- instance Applicative GenParser where
 --   pure  = GPPure

@@ -17,7 +17,8 @@ library
     build-depends:      base <5
                       , classy-prelude
                       , containers
-                      , process
+                      , hashable
+                      , ListLike
                       , time
 
                       , base-unicode-symbols

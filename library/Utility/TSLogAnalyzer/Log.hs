@@ -1,3 +1,7 @@
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 
@@ -9,6 +13,7 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  , ConnectType (..)
                                  , Time        (..)
                                  , mkTime
+                                 , UserName    (..)
                                  , UserID      (..)
                                  , IP          (..)
                                  , mkIP, getOctets
@@ -20,29 +25,29 @@ data LogEntry = LogEntry { entryTime    ∷ Time
                          , entryLevel   ∷ LogLevel
                          , entrySource  ∷ LogSource
                          , entryMessage ∷ Text
-                         } deriving (Eq, Show, Read)
+                         } deriving (Eq, Show, Read, Generic)
 
 data Connection = Connection { connType   ∷ ConnectType
-                             , connName   ∷ Text
+                             , connName   ∷ UserName
                              , connUID    ∷ UserID
                              , connIP     ∷ Maybe IP
                              , connReason ∷ Maybe Text
-                             } deriving (Eq, Show, Read)
+                             } deriving (Eq, Show, Read, Generic)
 
 data Session = Session { sessStart  ∷ Time
                        , sessEnd    ∷ Time
-                       , sessName   ∷ Text
+                       , sessName   ∷ UserName
                        , sessUID    ∷ UserID
                        , sessIP     ∷ IP
                        , sessReason ∷ Text
-                       } deriving (Eq, Show, Read)
+                       } deriving (Eq, Show, Read, Generic)
 
 data LogLevel   = DEVELOP
                 | INFO
                 | WARNING
                 | ERROR
                 | CRITICAL
-                deriving (Eq, Ord, Enum, Show, Read)
+                deriving (Eq, Ord, Enum, Show, Read, Generic)
 
 data LogSource  = Accounting
                 | BanManager
@@ -62,25 +67,28 @@ data LogSource  = Accounting
                 | VirtualServer
                 | VirtualServerBase
                 | VirtualSvrMgr
-                deriving (Eq, Ord, Enum, Show, Read)
+                deriving (Eq, Ord, Enum, Show, Read, Generic)
 
 
 data ConnectType = DCN
                  | CON
-                 deriving (Eq, Ord, Enum, Show, Read)
+                 deriving (Eq, Ord, Enum, Show, Read, Generic)
 
 newtype Time = Time { getUnixNanoseconds ∷ Int }
-             deriving (Eq, Ord, Show, Read)
+             deriving (Eq, Ord, Show, Read, Generic)
 
 mkTime ∷ Int → Time
 mkTime = Time
 
+newtype UserName = UserName { getName ∷ Text }
+                 deriving (Eq, Ord, Show, Read, Generic)
+
 newtype UserID = UserID { getUID ∷ Int }
-               deriving (Eq, Enum, Ord, Show, Read)
+               deriving (Eq, Enum, Ord, Show, Read, Generic)
 
 data IP = IP { getAddr ∷ Int
              , getPort ∷ Int
-             } deriving (Read, Show, Eq)
+             } deriving (Eq, Ord, Show, Read, Generic)
 
 -- | Make an IP
 mkIP ∷ (Int, Int, Int, Int) → Int → IP
@@ -94,3 +102,14 @@ getOctets (IP a _) = (o1, o2, o3, o4)
     o3 = ((a - o4) `div` 256) `mod` 256
     o2 = ((((a - o4) `div` 256) - o3) `div` 256) `mod` 256
     o1 = ((((((a - o4) `div` 256) - o3) `div` 256) - o2) `div` 256) `mod` 256
+
+instance Hashable LogEntry
+instance Hashable Connection
+instance Hashable Session
+instance Hashable ConnectType
+instance Hashable UserName
+instance Hashable UserID
+instance Hashable LogLevel
+instance Hashable LogSource
+instance Hashable Time
+instance Hashable IP
