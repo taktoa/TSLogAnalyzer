@@ -36,6 +36,11 @@ f <~> g = \x -> f <$> g x
 infixr 9 <~>
 
 
+-- <$ = flip (fmap . const)
+-- fmap f x = pure f <*> x
+-- (*>) :: f a -> f b -> f b
+-- a1 *> return a2 = (id <$ a1) <*> pure a2
+
 data GenParser α where
   GPPure   :: α → GenParser a
   GPThen   :: GenParser (α → β) → GenParser α → GenParser β
