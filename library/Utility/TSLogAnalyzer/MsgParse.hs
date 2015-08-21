@@ -1,13 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TupleSections     #-}
 
 -- | Parse a log message
 module Utility.TSLogAnalyzer.MsgParse where
 
+import           ClassyPrelude
+import           Prelude.Unicode
+
 import           Data.Attoparsec.Text       (Parser, decimal, string, takeTill)
 import qualified Data.Attoparsec.Text       as A
-
-import           ClassyPrelude
 
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.Util

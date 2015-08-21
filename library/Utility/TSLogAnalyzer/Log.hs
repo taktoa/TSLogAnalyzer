@@ -1,10 +1,8 @@
-{-# LANGUAGE DeriveFoldable             #-}
-{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 
+-- | Types for log parsing
 module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  , Connection  (..)
                                  , Session     (..)
@@ -20,26 +18,27 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  ) where
 
 import           ClassyPrelude
+import           Prelude.Unicode
 
-data LogEntry = LogEntry { entryTime    ∷ Time
-                         , entryLevel   ∷ LogLevel
-                         , entrySource  ∷ LogSource
-                         , entryMessage ∷ Text
+data LogEntry = LogEntry { entryTime    ∷ !Time
+                         , entryLevel   ∷ !LogLevel
+                         , entrySource  ∷ !LogSource
+                         , entryMessage ∷ !Text
                          } deriving (Eq, Show, Read, Generic)
 
-data Connection = Connection { connType   ∷ ConnectType
-                             , connName   ∷ UserName
-                             , connUID    ∷ UserID
-                             , connIP     ∷ Maybe IP
-                             , connReason ∷ Maybe Text
+data Connection = Connection { connType   ∷ !ConnectType
+                             , connName   ∷ !UserName
+                             , connUID    ∷ !UserID
+                             , connIP     ∷ !(Maybe IP)
+                             , connReason ∷ !(Maybe Text)
                              } deriving (Eq, Show, Read, Generic)
 
-data Session = Session { sessStart  ∷ Time
-                       , sessEnd    ∷ Time
-                       , sessName   ∷ UserName
-                       , sessUID    ∷ UserID
-                       , sessIP     ∷ IP
-                       , sessReason ∷ Text
+data Session = Session { sessStart  ∷ !Time
+                       , sessEnd    ∷ !Time
+                       , sessName   ∷ !UserName
+                       , sessUID    ∷ !UserID
+                       , sessIP     ∷ !IP
+                       , sessReason ∷ !Text
                        } deriving (Eq, Show, Read, Generic)
 
 data LogLevel   = DEVELOP
@@ -69,7 +68,6 @@ data LogSource  = Accounting
                 | VirtualSvrMgr
                 deriving (Eq, Ord, Enum, Show, Read, Generic)
 
-
 data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read, Generic)
@@ -86,8 +84,8 @@ newtype UserName = UserName { getName ∷ Text }
 newtype UserID = UserID { getUID ∷ Int }
                deriving (Eq, Enum, Ord, Show, Read, Generic)
 
-data IP = IP { getAddr ∷ Int
-             , getPort ∷ Int
+data IP = IP { getAddr ∷ !Int
+             , getPort ∷ !Int
              } deriving (Eq, Ord, Show, Read, Generic)
 
 -- | Make an IP

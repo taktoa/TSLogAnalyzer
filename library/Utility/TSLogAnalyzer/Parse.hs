@@ -1,55 +1,44 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TupleSections     #-}
 
---module Utility.TSLogAnalyzer.Parse ( logParse
---                                   , parseConns
---                                   , mergeLogins
---                                   ) where
-module Utility.TSLogAnalyzer.Parse where
+-- | Parse a log file
+module Utility.TSLogAnalyzer.Parse where -- (logParse, parseConns) where
 
 import           ClassyPrelude
+import           Prelude.Unicode
+
+import           Control.Monad                   (join, void)
 
 import           Data.Attoparsec.Text            (Parser, parse)
 import qualified Data.Attoparsec.Text            as A
-import           Data.Char                       (isSpace)
-import           Data.Maybe                      (maybeToList)
-import           Data.Ord                        (comparing)
-import           Prelude.Unicode
-import           Text.Read
+
 
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.MsgParse
 import           Utility.TSLogAnalyzer.TimeParse
+import           Utility.TSLogAnalyzer.Util      (optional, whitespace', ε,
+                                                  (<∘>))
 
--- delimiter ∷ Eq α ⇒ α → [α] → [[α]]
--- delimiter _ [] = []
--- delimiter d xs = a : delimiter d (drop 1 b)
---     where
---     (a, b) = span (≢ d) xs
+-- | Parse the log in the given file
+logParse ∷ FilePath → IO [LogEntry]
+logParse = parseLogs <∘> readFile
 
-whiteSpace ∷ Char → Bool
-whiteSpace = (∈ " \t")
+-- | Parse the log entries in the given string
+parseLogs ∷ Text → [LogEntry]
+parseLogs = sortBy (comparing entryTime)
+          ∘ mapMaybe (A.maybeResult ∘ A.parse entryParser ∘ (<> "\n"))
+          ∘ lines
 
-stripSpaces ∷ String → String
-stripSpaces = reverse ∘ dropWhile whiteSpace ∘ reverse
+-- | Parse many connections
+parseConns ∷ [LogEntry] → [(Time, Connection)]
+parseConns = mapMaybe parseConn
 
-toPairs ∷ [α] → [(α, α)]
-toPairs []       = []
-toPairs [_]      = []
-toPairs (x:y:xs) = (x, y) : toPairs xs
+-- | Parse a connection
+parseConn ∷ LogEntry → Maybe (Time, Connection)
+parseConn (LogEntry t INFO VirtualServerBase m) = (t,) <$> connParse (m <> ";")
+parseConn _                                     = Nothing
 
-mergeLogins ∷ [(α, ConnectType)] → [(α, α)]
-mergeLogins = toPairs ∘ merge 0
-  where
-    merge _ [] = []
-    merge c ((t, CON) : xs)
-      | c ≡ 0     = t : merge 1 xs
-      | otherwise =     merge (c + 1) xs
-    merge c ((t, DCN) : xs)
-      | c ≡ 0     =     merge 0 xs
-      | c ≡ 1     = t : merge 0 xs
-      | otherwise =     merge (c - 1) xs
-
+-- | Parse a 'LogEntry'
 entryParser ∷ Parser LogEntry
 entryParser = LogEntry <$> timeParser
                        <*  delimiter
@@ -57,45 +46,17 @@ entryParser = LogEntry <$> timeParser
                        <*  delimiter
                        <*> logSourceParser
                        <*  delimiter
-                       <*  A.digit
+                       <*  optional A.digit
                        <*  delimiter
                        <*> msgParser
   where
-    delimiter = whitespace >> A.char '|' >> whitespace
-    whitespace = A.takeWhile isSpace
+    delimiter = whitespace' >> A.char '|' >> whitespace'
 
+-- | Parse a reason message
 msgParser ∷ Parser Text
-msgParser = A.takeTill A.isEndOfLine <* A.endOfLine
+msgParser = A.takeTill A.isEndOfLine
 
---tsParseLine ∷ String → Maybe LogEntry
---tsParseLine s = do
---       let ds = delimiter '|' s
---       es <- if length ds ≡ 5 then Just (map stripSpaces ds) else Nothing
---       let [timStr, levStr, srcStr, _, _:msgStr] = es
---       tim <- undefined timeParse timStr
---       lev <- readMaybe levStr
---       src <- readMaybe srcStr
---       msg <- Just (pack (msgStr ++ ";"))
---       return (LogEntry tim lev src msg)
-
-tsParseLines ∷ Text → [LogEntry]
-tsParseLines = sortBy (comparing entryTime)
-             ∘ concat
-             ∘ map (maybeToList ∘ A.maybeResult ∘ A.parse entryParser)
-             ∘ map (<> "\n")
-             ∘ lines
-
-
-parseConns ∷ [LogEntry] → [(Time, Connection)]
-parseConns = concatMap $ maybeToList ∘ parseConn
-
-parseConn (LogEntry t INFO VirtualServerBase m) = (t,) <$> connParse (m <> ";")
-parseConn _                                     = Nothing
-
-logParse ∷ FilePath → IO [LogEntry]
-logParse fp = tsParseLines <$> readFile fp
-
-
+-- | Parse a 'LogLevel'
 logLevelParser ∷ Parser LogLevel
 logLevelParser = "DEVELOP"  $> DEVELOP
              <|> "INFO"     $> INFO
@@ -103,6 +64,7 @@ logLevelParser = "DEVELOP"  $> DEVELOP
              <|> "ERROR"    $> ERROR
              <|> "CRITICAL" $> CRITICAL
 
+-- | Parse a 'LogSource'
 logSourceParser ∷ Parser LogSource
 logSourceParser = "VirtualServerBase" $> VirtualServerBase
               <|> "Accounting"        $> Accounting

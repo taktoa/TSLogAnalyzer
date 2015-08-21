@@ -8,17 +8,17 @@
 --                                         , TSTime (..)
 --                                         ) where
 
+-- | Parse a time from the log
 module  Utility.TSLogAnalyzer.TimeParse where
-
 
 import           ClassyPrelude
 import           Prelude                      (Read (..), read)
+import           Prelude.Unicode
 
 import           Data.Attoparsec.Text         (Parser, decimal, parse)
 import           Data.Char                    (isDigit)
 import           Data.Maybe                   (fromJust)
 import           Data.Time.Clock.POSIX        (utcTimeToPOSIXSeconds)
-import           Prelude.Unicode
 
 import           Text.ParserCombinators.ReadP
 

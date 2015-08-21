@@ -26,6 +26,7 @@ library
 
                       , mtl
                       , text
+                      , text-icu
                       , extra
                       , attoparsec
                       , configurator
@@ -36,11 +37,18 @@ library
                       , Utility.TSLogAnalyzer.Parse
                       , Utility.TSLogAnalyzer.MsgParse
                       , Utility.TSLogAnalyzer.TimeParse
-    ghc-options:        -Wall -fno-warn-type-defaults
+    ghc-options:        -Wall
+                        -fno-warn-type-defaults
+                        -fno-warn-unused-imports
+                        -fno-warn-unused-do-bind
     ghc-prof-options:   -auto-all -prof
     hs-source-dirs:     library
-    default-extensions: OverloadedStrings
-                      , UnicodeSyntax
+    default-extensions: UnicodeSyntax
+                      , OverloadedStrings
+                      , BangPatterns
+                      , TupleSections
+                      , TypeSynonymInstances
+                      , ScopedTypeVariables
 
 executable TSLogAnalyzer
     build-depends:      base
