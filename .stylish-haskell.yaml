@@ -8,3 +8,11 @@ steps:
   - trailing_whitespace: {}
 language_extensions:
   - UnicodeSyntax
+  - NoImplicitPrelude
+  - UnicodeSyntax
+  - OverloadedStrings
+  - OverloadedLists
+  - BangPatterns
+  - TupleSections
+  - TypeSynonymInstances
+  - ScopedTypeVariables
