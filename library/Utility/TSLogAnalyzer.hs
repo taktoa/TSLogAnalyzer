@@ -92,51 +92,8 @@ printAliases = mapM_ (uncurry helper1) . M.toList
 processAliases ∷ [Identifier] → AliasMap
 processAliases xs = execState (mapM_ process xs) ø
   where
-    process ∷ Identifier → State AliasMap ()
     process (n, u, i) = modify ((Just . process' n i) `M.alter` u)
     process' name ip = M.insertWith (∪) name (sing ip) . fromMaybe ø
-
-type El a = Element a
-
-omergeBy ∷ IsSequence ς ⇒ (El ς → Bool) → (El ς → El ς → El ς) → ς → ς
-omergeBy filt comb xs = if   null trueVals
-                        then ø
-                        else ofoldr1Ex comb trueVals `cons` falseVals
-  where
-    (trueVals, falseVals) = partition filt xs
-
-
-mergeBy ∷ ListLike τ ɛ ⇒ (ɛ → Bool) → (ɛ → ɛ → ɛ) → τ → τ
-mergeBy filt comb xs = if   LL.null trueVals
-                       then ø
-                       else LL.foldr1 comb trueVals `LL.cons` falseVals
-  where
-    (trueVals, falseVals) = partitionFT filt xs
-
-partitionFT ∷ ListLike τ ɛ ⇒ (ɛ → Bool) → τ → (τ, τ)
-partitionFT p xs = execState (LL.mapM_ genState xs) (ø, ø)
-  where
-    genState e = modify (\(x, y) -> if p e
-                                    then (e `LL.cons` x, y)
-                                    else (x, e `LL.cons` y))
-
-genIPMap ∷ [Identifier] → Map IPAddr (Set UserID)
-genIPMap xs = execState (mapM_ mapper xs) ø
-  where
-    mapper (_, uid, ip) = modify $ M.insertWith (∪) ip $ sing uid
-
-mergeMatchingIPs ∷ [Identifier] → Set Identifier
-mergeMatchingIPs xs = S.fromList
-                    $ nubTriples
-                    $ fst
-                    $ flip runState ()
-                    $ mapM mapS xs
-  where
-    nubTriples = ordNubBy snd3 (\(a, x, _) (b, y, _) -> x == y && a == b)
-    mapS trip = return $ mapper trip
-    mapper trip@(name, _, ip) =
-      fromMaybe trip $ process name ip =<< lookup ip (genIPMap xs)
-    process name ip us = (,,) <$> Just name <*> minimumMay us <*> Just ip
 
 data BiMultiMap α β = BMM (Map α (β, Set β)) (Map β α) deriving Eq
 
