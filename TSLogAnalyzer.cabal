@@ -33,6 +33,7 @@ library
     default-language:   Haskell2010
     exposed-modules:    Utility.TSLogAnalyzer
                       , Utility.TSLogAnalyzer.Util
+                      , Utility.TSLogAnalyzer.BiMultiMap
                       , Utility.TSLogAnalyzer.Log
                       , Utility.TSLogAnalyzer.Parse
                       , Utility.TSLogAnalyzer.MsgParse

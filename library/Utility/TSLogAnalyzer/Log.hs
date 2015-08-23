@@ -9,8 +9,6 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  , LogLevel    (..)
                                  , LogSource   (..)
                                  , ConnectType (..)
-                                 , Time        (..)
-                                 , mkTime
                                  , UserName    (..)
                                  , UserID      (..)
                                  , IP          (..)
@@ -19,6 +17,8 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
 
 import           ClassyPrelude
 import           Prelude.Unicode
+
+import           Utility.TSLogAnalyzer.TimeParse (Time, mkTime)
 
 data LogEntry = LogEntry { entryTime    ∷ !Time
                          , entryLevel   ∷ !LogLevel
@@ -72,12 +72,6 @@ data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read, Generic)
 
-newtype Time = Time { getUnixNanoseconds ∷ Int }
-             deriving (Eq, Ord, Show, Read, Generic)
-
-mkTime ∷ Int → Time
-mkTime = Time
-
 newtype UserName = UserName { getName ∷ Text }
                  deriving (Eq, Ord, Show, Read, Generic)
 
@@ -109,5 +103,4 @@ instance Hashable UserName
 instance Hashable UserID
 instance Hashable LogLevel
 instance Hashable LogSource
-instance Hashable Time
 instance Hashable IP

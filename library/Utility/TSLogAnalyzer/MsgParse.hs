@@ -12,8 +12,6 @@ import qualified Data.Attoparsec.Text       as A
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.Util
 
-import           Prelude.Unicode
-
 connParse ∷ Text → Maybe Connection
 connParse = A.maybeResult ∘ A.parse connectionParser
 

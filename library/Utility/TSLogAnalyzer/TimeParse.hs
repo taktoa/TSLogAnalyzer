@@ -1,12 +1,7 @@
+{-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE NoImplicitPrelude         #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-
--- module  Utility.TSLogAnalyzer.TimeParse ( timeParse
---                                         , unixTSDate
---                                         , timeParseCheck
---                                         , TSDate (..)
---                                         , TSTime (..)
---                                         ) where
+{-# LANGUAGE TypeFamilies              #-}
 
 -- | Parse a time from the log
 module  Utility.TSLogAnalyzer.TimeParse where
@@ -15,15 +10,39 @@ import           ClassyPrelude
 import           Prelude                      (Read (..), read)
 import           Prelude.Unicode
 
-import           Data.Attoparsec.Text         (Parser, decimal, parse)
+import           Data.Attoparsec.Text         (Parser, decimal)
 import           Data.Char                    (isDigit)
 import           Data.Maybe                   (fromJust)
 import           Data.Time.Clock.POSIX        (utcTimeToPOSIXSeconds)
 
 import           Text.ParserCombinators.ReadP
 
-import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.Util
+
+newtype Time = Time { getUnixNanoTime ∷ Int }
+             deriving (Eq, Ord, Show, Read, Generic)
+
+mkTime ∷ Int → Time
+mkTime = Time
+
+newtype DiffTime = DiffTime { getNanoDiff ∷ Int }
+             deriving (Eq, Ord, Show, Read, Generic)
+
+mkDiffTime ∷ Int → DiffTime
+mkDiffTime = DiffTime
+
+-- Shamelessly stolen from Conal Elliot's vector-space package
+class AffineSpace ρ where
+  type Diff ρ
+  (.-.) ∷ ρ → ρ → Diff ρ
+  (.+^) ∷ ρ → Diff ρ → ρ
+  (.-^) ∷ ρ → Diff ρ → ρ
+
+instance AffineSpace Time where
+  type Diff Time = DiffTime
+  (Time a) .-. (Time b)     = DiffTime (a - b)
+  (Time a) .+^ (DiffTime b) = Time (a + b)
+  (Time a) .-^ (DiffTime b) = Time (a - b)
 
 data TSDate = TSDate { tsYear       ∷ Int
                      , tsMonth      ∷ Int
@@ -76,3 +95,6 @@ toUnix = mkTime ∘ truncate ∘ toNanos ∘ utcTimeToPOSIXSeconds
   where
     toNanos ∷ Num n ⇒ n → n
     toNanos s = s * 1000000000
+
+instance Hashable Time
+instance Hashable DiffTime

@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns              #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
@@ -6,6 +5,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
+{-# LANGUAGE TypeFamilies              #-}
 
 -- | Main functions for log analysis
 module Utility.TSLogAnalyzer (module Utility.TSLogAnalyzer) where
@@ -13,33 +13,35 @@ module Utility.TSLogAnalyzer (module Utility.TSLogAnalyzer) where
 import           ClassyPrelude
 import           Prelude.Unicode
 
-import qualified Data.Foldable                   as Fold
-import qualified Data.Traversable                as Trav
+import qualified Data.Foldable                    as Fold
+import qualified Data.Traversable                 as Trav
 
-import qualified Data.Graph                      as G
-import qualified Data.IntMap.Strict              as IM
-import qualified Data.List                       as L
-import qualified Data.ListLike                   as LL
-import qualified Data.Map.Strict                 as M
-import qualified Data.Set                        as S
-import qualified Data.Tree                       as T
+import qualified Data.Graph                       as G
+import qualified Data.IntMap.Strict               as IM
+import qualified Data.List                        as L
+import qualified Data.ListLike                    as LL
+import qualified Data.Map.Strict                  as M
+import qualified Data.Set                         as S
+import qualified Data.Tree                        as T
+import qualified Utility.TSLogAnalyzer.BiMultiMap as BMM
 
-import           Control.Monad.State.Lazy        (State)
-import           Data.IntMap.Strict              (IntMap)
-import           Data.ListLike                   (ListLike)
-import           Data.Map.Strict                 (Map)
-import           Data.Set                        (Set)
+import           Control.Monad.State.Lazy         (State)
+import           Data.IntMap.Strict               (IntMap)
+import           Data.ListLike                    (ListLike)
+import           Data.Map.Strict                  (Map)
+import           Data.Set                         (Set)
+import           Utility.TSLogAnalyzer.BiMultiMap (BiMultiMap)
 
-import           Control.Arrow                   ((&&&))
-import           Control.Monad.State.Lazy        (get, modify, put, state)
-import           Control.Monad.State.Lazy        (evalState, execState,
-                                                  runState)
-import           Data.Maybe                      (fromMaybe, mapMaybe,
-                                                  maybeToList)
-import           Data.Ord                        (comparing)
-import           Data.Set.Unicode                ((∩), (∪))
-import           Data.Tuple.Extra                (dupe)
-import           Extra                           (snd3)
+import           Control.Arrow                    ((&&&))
+import           Control.Monad.State.Lazy         (get, modify, put, state)
+import           Control.Monad.State.Lazy         (evalState, execState,
+                                                   runState)
+import           Data.Maybe                       (fromMaybe, mapMaybe,
+                                                   maybeToList)
+import           Data.Ord                         (comparing)
+import           Data.Set.Unicode                 ((∩), (∪))
+import           Data.Tuple.Extra                 (dupe)
+import           Extra                            (snd3)
 
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.MsgParse
@@ -61,20 +63,60 @@ range ∷ (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
 range xs = Fold.foldr1 cmp $ dupe <$> xs
   where cmp (a, b) (c, d) = (min a c, max b d)
 
+data ServerState = SState { usersOnline :: Set UserID
+                          , userTime    :: Map UserID (Time, DiffTime)
+                          } deriving (Eq, Show, Read)
+
+data ServerEvent = SCon UserID UserName
+                 | SDcn UserID UserName
+
+genConnEvents ∷ [(Time, Connection)] → [(Time, ServerEvent)]
+genConnEvents = map (second $ conToSE)
+  where
+    conToSE (Connection CON name uid _ _) = SCon uid name
+    conToSE (Connection DCN name uid _ _) = SDcn uid name
+
+stateEvents ∷ [(Time, ServerEvent)] → Time → ServerState
+stateEvents evts time = flip execState (SState ø ø)
+                      $ mapM_ stateEvent
+                      $ filter ((> time) . fst)
+                      $ sortBy (comparing fst) evts
+
+stateEvent ∷ (Time, ServerEvent) → State ServerState ()
+stateEvent (time, (SCon uid name)) = conSC time uid
+stateEvent (time, (SDcn uid name)) = dcnSC time uid
+
+conSC ∷ Time → UserID → State ServerState ()
+conSC time uid = modify modder
+  where
+    modder ss = ss { usersOnline = S.insert uid $ usersOnline ss
+                   , userTime    = M.adjust addLogin uid $ userTime ss
+                   }
+    addLogin (last, acc) = (time, acc)
+
+dcnSC ∷ Time → UserID → State ServerState ()
+dcnSC time uid = modify modder
+  where
+    modder ss = ss { usersOnline = S.delete uid $ usersOnline ss
+                   , userTime    = M.adjust addDelta uid $ userTime ss
+                   }
+    addDelta (last, acc) = (last, (time .+^ acc) .-. last)
+
 type IPAddr = (Int, Int, Int, Int)
 type AliasMap = Map UserID (Map UserName (Set IPAddr))
 type Identifier = (UserName, UserID, IPAddr)
 
-generateAliases ∷ FilePath → IO [Identifier]
-generateAliases fp = do
-  !logs <- parseConns <$> logParse fp
-  return $ hashNub $ mapMaybe (process . snd) logs
+getConns ∷ FilePath → IO [(Time, Connection)]
+getConns = parseConns <∘> logParse
+
+generateAliases ∷ [(Time, Connection)] → [Identifier]
+generateAliases = hashNub ∘ mapMaybe (process ∘ snd)
   where
     process (Connection _ _    _   Nothing   _) = Nothing
     process (Connection _ name uid (Just ip) _) = Just (name, uid, getOctets ip)
 
 printAliases ∷ AliasMap → IO ()
-printAliases = mapM_ (uncurry helper1) . M.toList
+printAliases = mapM_ (uncurry helper1) ∘ M.toList
   where
     helper1 ∷ UserID → Map UserName (Set IPAddr) → IO ()
     helper1 (UserID uid) m = do
@@ -83,7 +125,7 @@ printAliases = mapM_ (uncurry helper1) . M.toList
     helper2 ∷ UserName → Set IPAddr → IO ()
     helper2 (UserName name) s = do
       putStrLn $ "  " <> "Name: " <> name
-      mapM_ (putStrLn . ("    " <>) . showIP) s
+      mapM_ (putStrLn ∘ ("    " <>) ∘ showIP) s
     showIP (o1, o2, o3, o4) = tshow o1 <> "."
                            <> tshow o2 <> "."
                            <> tshow o3 <> "."
@@ -92,60 +134,25 @@ printAliases = mapM_ (uncurry helper1) . M.toList
 processAliases ∷ [Identifier] → AliasMap
 processAliases xs = execState (mapM_ process xs) ø
   where
-    process (n, u, i) = modify ((Just . process' n i) `M.alter` u)
-    process' name ip = M.insertWith (∪) name (sing ip) . fromMaybe ø
+    process (n, u, i) = modify ((Just ∘ process' n i) `M.alter` u)
+    process' name ip = M.insertWith (∪) name (sing ip) ∘ fromMaybe ø
 
-data BiMultiMap α β = BMM (Map α (β, Set β)) (Map β α) deriving Eq
-
-instance (Ord α, Show α, Ord β, Show β) ⇒ Show (BiMultiMap α β) where
-  show = unpack ∘ showBMM
-
--- | Create a BiMultiMap from the given list of key / value set pairs
-bmmFromList ∷ (Ord α, Ord β) ⇒ [(α, [β])] → BiMultiMap α β
-bmmFromList = uncurry BMM ∘ ((apply ∘ fmap forward) &&& (apply ∘ fmap backward))
-  where
-    apply = M.fromList ∘ L.concat
-    forward  (a, b) = case b of
-      (_:_) -> [(a, (L.minimum b, S.fromList b))]
-      _     -> []
-    backward (a, b) = fmap (,a) b
-
--- | Look up the set of values corresponding to a given key.
-bmmLookupF ∷ (Ord α, Ord β) ⇒ α → BiMultiMap α β → Set β
-bmmLookupF k (BMM f _) = concat $ snd <$> M.lookup k f
-
--- | Look up the distinguished element in the set for the given key.
-bmmLookupD ∷ (Ord α, Ord β) ⇒ α → BiMultiMap α β → Maybe β
-bmmLookupD k (BMM f _) = fst <$> M.lookup k f
-
--- | Look up the key corresponding to the given value.
-bmmLookupB ∷ (Ord α, Ord β) ⇒ β → BiMultiMap α β → Maybe α
-bmmLookupB v (BMM _ b) = M.lookup v b
-
--- | Find the distinguished element corresponding to the set in which the given
---   value is contained, if it exists.
-bmmRoundtrip ∷ (Ord α, Ord β) ⇒ BiMultiMap α β → α → Maybe α
-bmmRoundtrip m k = bmmLookupD k m >>= flip bmmLookupB m
-
--- | Show a BiMultiMap as a 'Text'
-showBMM ∷ (Ord α, Show α, Ord β, Show β) ⇒ BiMultiMap α β → Text
-showBMM (BMM m _) = concatMap (\(b, a) -> tshow a <> " -> " <> tshow b <> "\n")
-                  $ M.toList
-                  $ M.map fst m
+mergeUsers ∷ [Identifier] → [Identifier]
+mergeUsers = map snd ∘ M.toList ∘ BMM.getDist ∘ identGroups
 
 identGroups ∷ [Identifier] → BiMultiMap Int Identifier
-identGroups xs = bmmFromList
+identGroups xs = BMM.fromList
                $ zip [0..]
                $ map (mapMaybe (`IM.lookup` idxMap) ∘ T.flatten)
                $ G.components
                $ identGraph xs
   where
-    idxMap = IM.fromList $ zip [0..] xs
+    (_, _, idxMap) = genIndex xs
 
 identGraph ∷ [Identifier] → G.Graph
-identGraph xs = G.buildG iBounds
+identGraph xs = G.buildG (iMin, iMax)
               $ flip evalState idxMap
-              $ concatMapM process iRange
+              $ concatMapM process [iMin .. iMax]
   where
     process i = do
       imap <- get
@@ -158,17 +165,22 @@ identGraph xs = G.buildG iBounds
     equalElem (a, p, x) (b, q, y) = (a == b && p == q) ||
                                     (a == b && x == y) ||
                                     (p == q && x == y)
-    iRange  = [iMin .. iMax]
-    iBounds = (iMin, iMax)
-    (iMin, iMax) = (0, IM.size idxMap)
+    (iMin, iMax, idxMap) = genIndex xs
+
+genIndex ∷ [Identifier] → (Int, Int, IntMap Identifier)
+genIndex xs = (0, IM.size idxMap, idxMap)
+  where
     idxMap = IM.fromList $ zip [0..] xs
 
 bigLog ∷ IO Text
 bigLog = readFile "./data/BIGLOG_2015.log"
 
+testTime ∷ Time
+testTime = mkTime 1440200402000000000
+
 main ∷ IO ()
 main = do
-  fp <- fromMaybe (error "No file specified") . headMay <$> getArgs
-  aliases <- generateAliases $ unpack fp
-  -- printAliases $ processAliases $ S.toList $ mergeMatchingIPs aliases
+  fp <- fromMaybe (error "No file specified") ∘ headMay <$> getArgs
+  aliases <- generateAliases <$> getConns (unpack fp)
+  printAliases $ processAliases $ mergeUsers aliases
 
