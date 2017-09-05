@@ -11,20 +11,18 @@ license:                MIT
 maintainer:             taktoa@gmail.com
 name:                   TSLogAnalyzer
 synopsis:               Analyzes TeamSpeak 3 server log files
-tested-with:            GHC == 7.10
+tested-with:            GHC == 8.0
 
 library
-    build-depends:      base <5
+    build-depends:      base < 5
                       , classy-prelude
                       , containers
+                      , unordered-containers
                       , hashable
                       , ListLike
                       , time
-
-                      , base-unicode-symbols
-                      , containers-unicode-symbols
-
                       , mtl
+                      , transformers
                       , text
                       , text-icu
                       , extra
@@ -42,21 +40,19 @@ library
                         -fno-warn-type-defaults
                         -fno-warn-unused-imports
                         -fno-warn-unused-do-bind
-    ghc-prof-options:   -auto-all -prof
     hs-source-dirs:     library
-    default-extensions: UnicodeSyntax
-                      , OverloadedStrings
-                      , BangPatterns
-                      , TupleSections
-                      , TypeSynonymInstances
-                      , ScopedTypeVariables
+    -- other-extensions:   UnicodeSyntax
+    --                   , OverloadedStrings
+    --                   , BangPatterns
+    --                   , TupleSections
+    --                   , TypeSynonymInstances
+    --                   , ScopedTypeVariables
 
 executable TSLogAnalyzer
     build-depends:      base
                       , TSLogAnalyzer
     default-language:   Haskell2010
     ghc-options:        -threaded
-    ghc-prof-options:   -auto-all -prof
     hs-source-dirs:     executable
     main-is:            Main.hs
     default-extensions: UnicodeSyntax

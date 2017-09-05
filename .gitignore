@@ -1,9 +1,11 @@
 /dist/
+/dist-newstyle/
 /cabal-dev/
 /.virtualenv/
 /.hpc/
 /.hsenv/
 /.cabal-sandbox/
+cabal.project.local
 cabal.sandbox.config
 cabal.config
 *.o
@@ -16,8 +18,6 @@ cabal.config
 *.aux
 *.hp
 *.tix
-default.nix
-shell.nix
 scratchpad.hs
 *~
 [#]*[#]

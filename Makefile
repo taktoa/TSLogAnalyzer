@@ -1,43 +1,34 @@
-.PHONY: all build clean configure haddock install repl run tags
-shell = '$$SHELL'
-all: install configure build haddock tags
+project = TSLogAnalyzer
 
-build:
-	cabal build --jobs
+.PHONY: all build clean configure haddock nix-shell repl tags
 
-clean: nix-clean
-	cabal clean
-	-rm -f *.tix
-	if test -d .cabal-sandbox; then cabal sandbox delete; fi
-	if test -d .hpc; then rm -r .hpc; fi
+all: build haddock tags
+
+build: configure
+	cabal new-build -j8
 
 configure:
-	cabal configure
+	cabal new-configure
+
+clean:
+	-@cabal clean
+	-@rm -rf *.tix
+	-@rm -rf .hpc
+	-@rm -rf dist-newstyle
 
 haddock:
 	cabal haddock --hyperlink-source
 
-install:
-	cabal sandbox init
-	cabal install --jobs --only-dependencies --reorder-goals
+default.nix: $(project).cabal
+	cabal2nix ./. > default.nix
 
-nix-clean:
-	if test -e default.nix; then rm default.nix; fi
-	if test -e shell.nix; then rm shell.nix; fi
-
-nix-init: clean
-	cabal2nix --shell . > shell.nix;
-	cabal2nix . > default.nix;
-
-nix-shell: nix-init
-	nix-shell --command 'make install && $(shell)'
+nix-shell: default.nix
+	make clean
+	nix-shell --run $$SHELL
 	make clean
 
 repl:
-	cabal repl lib:TSLogAnalyzer
-
-run:
-	cabal run --jobs .
+	cabal new-repl lib:$(project)
 
 tags:
 	hasktags -e .

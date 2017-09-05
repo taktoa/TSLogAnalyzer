@@ -34,10 +34,10 @@ import           Utility.TSLogAnalyzer.BiMultiMap (BiMultiMap)
 
 import           Control.Arrow                    ((&&&))
 import           Control.Monad.State.Lazy         (get, modify, put, state)
-import           Control.Monad.State.Lazy         (evalState, execState,
-                                                   runState)
-import           Data.Maybe                       (fromMaybe, mapMaybe,
-                                                   maybeToList)
+import           Control.Monad.State.Lazy
+                 (evalState, execState, runState)
+import           Data.Maybe
+                 (fromMaybe, mapMaybe, maybeToList)
 import           Data.Ord                         (comparing)
 import           Data.Set.Unicode                 ((∩), (∪))
 import           Data.Tuple.Extra                 (dupe)

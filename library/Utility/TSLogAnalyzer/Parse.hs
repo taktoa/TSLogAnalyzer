@@ -12,16 +12,14 @@ import           Control.Monad                   (join, void)
 import           Data.Attoparsec.Text            (Parser, parse)
 import qualified Data.Attoparsec.Text            as A
 
-
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.MsgParse
 import           Utility.TSLogAnalyzer.TimeParse
-import           Utility.TSLogAnalyzer.Util      (optional, whitespace', ε,
-                                                  (<∘>))
+import           Utility.TSLogAnalyzer.Util      (optional, whitespace', (<~>))
 
 -- | Parse the log in the given file
 logParse :: FilePath -> IO [LogEntry]
-logParse = parseLogs <∘> readFile
+logParse = parseLogs <~> readFile
 
 -- | Parse the log entries in the given string
 parseLogs :: Text -> [LogEntry]

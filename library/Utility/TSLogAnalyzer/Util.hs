@@ -1,27 +1,25 @@
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 
 -- | Utility functions
 module Utility.TSLogAnalyzer.Util where
 
 import           ClassyPrelude
-import           Prelude.Unicode
 
-import Control.Monad (void)
-import Control.Applicative (Alternative (..))
+import           Control.Applicative  (Alternative (..))
+import           Control.Monad        (void)
 
 import           Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 
-import qualified Data.ListLike as LL
+import qualified Data.ListLike        as LL
 
 import           Data.Text.ICU.Char   (Bool_ (WhiteSpace), property)
 
 
-concatMapM :: (Monad μ,
-              Traversable τ,
-              LL.ListLike λ β,
-              LL.ListLike (τ λ) λ) => (α -> μ λ) -> τ α -> μ λ
+concatMapM :: (Monad μ, Traversable τ, LL.ListLike λ β, LL.ListLike (τ λ) λ)
+           => (α -> μ λ) -> τ α -> μ λ
 concatMapM f xs = LL.concat <$> mapM f xs
 
 singleQuote, doubleQuote :: Parser Char
@@ -32,9 +30,6 @@ hyphen                   :: Parser Char
 space                    :: Parser Char
 whitespace               :: Parser Char
 whitespace'              :: Parser Text
-
-ε :: Alternative φ => φ α
-ε = empty
 
 singleQuote = A.char '\''
 doubleQuote = A.char '"'
