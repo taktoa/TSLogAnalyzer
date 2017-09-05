@@ -83,11 +83,11 @@ data IP = IP { getAddr :: !Int
              } deriving (Eq, Ord, Show, Read, Generic)
 
 -- | Make an IP
-mkIP :: (Int, Int, Int, Int) → Int → IP
+mkIP :: (Int, Int, Int, Int) -> Int -> IP
 mkIP (o1, o2, o3, o4) = IP $ o1 * (256^3) + o2 * (256^2) + o3 * 256 + o4
 
 -- | Get the octets for a given IP
-getOctets :: IP → (Int, Int, Int, Int)
+getOctets :: IP -> (Int, Int, Int, Int)
 getOctets (IP a _) = (o1, o2, o3, o4)
     where
     o4 = a `mod` 256

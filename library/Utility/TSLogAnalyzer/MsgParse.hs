@@ -12,7 +12,7 @@ import qualified Data.Attoparsec.Text       as A
 import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.Util
 
-connParse :: Text → Maybe Connection
+connParse :: Text -> Maybe Connection
 connParse = A.maybeResult ∘ A.parse connectionParser
 
 connectionParser :: Parser Connection
@@ -34,13 +34,13 @@ dcnParser = string "client disconnected " >>
                   <*> rsnParser
                   <*  semicolon
 
-mkCON :: UserName → UserID → IP → Connection
+mkCON :: UserName -> UserID -> IP -> Connection
 mkCON name uid ip  = Connection CON name uid (Just ip) Nothing
 
-mkDCN :: UserName → UserID → Text → Connection
+mkDCN :: UserName -> UserID -> Text -> Connection
 mkDCN name uid rsn = Connection DCN name uid Nothing   (Just rsn)
 
-inParens :: Parser a → Parser a
+inParens :: Parser a -> Parser a
 inParens p = openParen *> p <* closeParen
 
 untilSingleQuote :: Parser Text

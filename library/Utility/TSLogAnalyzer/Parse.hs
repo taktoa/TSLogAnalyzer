@@ -20,21 +20,21 @@ import           Utility.TSLogAnalyzer.Util      (optional, whitespace', ε,
                                                   (<∘>))
 
 -- | Parse the log in the given file
-logParse :: FilePath → IO [LogEntry]
+logParse :: FilePath -> IO [LogEntry]
 logParse = parseLogs <∘> readFile
 
 -- | Parse the log entries in the given string
-parseLogs :: Text → [LogEntry]
+parseLogs :: Text -> [LogEntry]
 parseLogs = sortBy (comparing entryTime)
           ∘ mapMaybe (A.maybeResult ∘ A.parse entryParser ∘ (<> "\n"))
           ∘ lines
 
 -- | Parse many connections
-parseConns :: [LogEntry] → [(Time, Connection)]
+parseConns :: [LogEntry] -> [(Time, Connection)]
 parseConns = mapMaybe parseConn
 
 -- | Parse a connection
-parseConn :: LogEntry → Maybe (Time, Connection)
+parseConn :: LogEntry -> Maybe (Time, Connection)
 parseConn (LogEntry t INFO VirtualServerBase m) = (t,) <$> connParse (m <> ";")
 parseConn _                                     = Nothing
 
