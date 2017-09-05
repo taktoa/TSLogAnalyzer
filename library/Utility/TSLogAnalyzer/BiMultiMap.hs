@@ -34,19 +34,19 @@ instance (Ord α, Show α, Ord β, Show β) ⇒ Show (BiMultiMap α β) where
 
 
 -- | Get the map from keys to value sets
-getForward ∷ BiMultiMap α β → Map α (Set β)
+getForward :: BiMultiMap α β → Map α (Set β)
 getForward (BMM m _) = M.map snd m
 
 -- | Get the map from values to keys
-getBackward ∷ BiMultiMap α β → Map β α
+getBackward :: BiMultiMap α β → Map β α
 getBackward (BMM _ m) = m
 
 -- | Get the map from keys to distinguished values
-getDist ∷ BiMultiMap α β → Map α β
+getDist :: BiMultiMap α β → Map α β
 getDist (BMM m _) = M.map fst m
 
 -- | Create a BiMultiMap from the given list of key / value set pairs
-fromList ∷ (Ord α, Ord β) ⇒ [(α, [β])] → BiMultiMap α β
+fromList :: (Ord α, Ord β) ⇒ [(α, [β])] → BiMultiMap α β
 fromList = uncurry BMM ∘ (apply forward &&& apply backward)
   where
     apply f = M.fromList ∘ L.concat ∘ fmap f
@@ -56,18 +56,18 @@ fromList = uncurry BMM ∘ (apply forward &&& apply backward)
     backward (a, b) = fmap (,a) b
 
 -- | Look up the set of values corresponding to a given key.
-lookupF ∷ (Ord α, Ord β) ⇒ α → BiMultiMap α β → Set β
+lookupF :: (Ord α, Ord β) ⇒ α → BiMultiMap α β → Set β
 lookupF k (BMM f _) = concat $ snd <$> M.lookup k f
 
 -- | Look up the distinguished element in the set for the given key.
-lookupD ∷ (Ord α, Ord β) ⇒ α → BiMultiMap α β → Maybe β
+lookupD :: (Ord α, Ord β) ⇒ α → BiMultiMap α β → Maybe β
 lookupD k (BMM f _) = fst <$> M.lookup k f
 
 -- | Look up the key corresponding to the given value.
-lookupB ∷ (Ord α, Ord β) ⇒ β → BiMultiMap α β → Maybe α
+lookupB :: (Ord α, Ord β) ⇒ β → BiMultiMap α β → Maybe α
 lookupB v (BMM _ b) = M.lookup v b
 
 -- | Find the distinguished element corresponding to the set in which the given
 --   value is contained, if it exists.
-roundTrip ∷ (Ord α, Ord β) ⇒ BiMultiMap α β → α → Maybe α
+roundTrip :: (Ord α, Ord β) ⇒ BiMultiMap α β → α → Maybe α
 roundTrip m k = lookupD k m >>= flip lookupB m

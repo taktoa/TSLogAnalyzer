@@ -50,16 +50,16 @@ import           Utility.TSLogAnalyzer.TimeParse
 
 import           Utility.TSLogAnalyzer.Util
 
-(!@) ∷ Ord κ ⇒ Map κ α → κ → Maybe α
+(!@) :: Ord κ ⇒ Map κ α → κ → Maybe α
 a !@ b = M.lookup b a
 
-ø ∷ Monoid μ ⇒ μ
+ø :: Monoid μ ⇒ μ
 ø = mempty
 
-sing ∷ MonoPointed μ ⇒ Element μ → μ
+sing :: MonoPointed μ ⇒ Element μ → μ
 sing = opoint
 
-range ∷ (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
+range :: (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
 range xs = Fold.foldr1 cmp $ dupe <$> xs
   where cmp (a, b) (c, d) = (min a c, max b d)
 
@@ -70,23 +70,23 @@ data ServerState = SState { usersOnline :: Set UserID
 data ServerEvent = SCon UserID UserName
                  | SDcn UserID UserName
 
-genConnEvents ∷ [(Time, Connection)] → [(Time, ServerEvent)]
+genConnEvents :: [(Time, Connection)] → [(Time, ServerEvent)]
 genConnEvents = map (second $ conToSE)
   where
     conToSE (Connection CON name uid _ _) = SCon uid name
     conToSE (Connection DCN name uid _ _) = SDcn uid name
 
-stateEvents ∷ [(Time, ServerEvent)] → Time → ServerState
+stateEvents :: [(Time, ServerEvent)] → Time → ServerState
 stateEvents evts time = flip execState (SState ø ø)
                       $ mapM_ stateEvent
                       $ filter ((> time) . fst)
                       $ sortBy (comparing fst) evts
 
-stateEvent ∷ (Time, ServerEvent) → State ServerState ()
+stateEvent :: (Time, ServerEvent) → State ServerState ()
 stateEvent (time, (SCon uid name)) = conSC time uid
 stateEvent (time, (SDcn uid name)) = dcnSC time uid
 
-conSC ∷ Time → UserID → State ServerState ()
+conSC :: Time → UserID → State ServerState ()
 conSC time uid = modify modder
   where
     modder ss = ss { usersOnline = S.insert uid $ usersOnline ss
@@ -94,7 +94,7 @@ conSC time uid = modify modder
                    }
     addLogin (last, acc) = (time, acc)
 
-dcnSC ∷ Time → UserID → State ServerState ()
+dcnSC :: Time → UserID → State ServerState ()
 dcnSC time uid = modify modder
   where
     modder ss = ss { usersOnline = S.delete uid $ usersOnline ss
@@ -106,23 +106,23 @@ type IPAddr = (Int, Int, Int, Int)
 type AliasMap = Map UserID (Map UserName (Set IPAddr))
 type Identifier = (UserName, UserID, IPAddr)
 
-getConns ∷ FilePath → IO [(Time, Connection)]
+getConns :: FilePath → IO [(Time, Connection)]
 getConns = parseConns <∘> logParse
 
-generateAliases ∷ [(Time, Connection)] → [Identifier]
+generateAliases :: [(Time, Connection)] → [Identifier]
 generateAliases = hashNub ∘ mapMaybe (process ∘ snd)
   where
     process (Connection _ _    _   Nothing   _) = Nothing
     process (Connection _ name uid (Just ip) _) = Just (name, uid, getOctets ip)
 
-printAliases ∷ AliasMap → IO ()
+printAliases :: AliasMap → IO ()
 printAliases = mapM_ (uncurry helper1) ∘ M.toList
   where
-    helper1 ∷ UserID → Map UserName (Set IPAddr) → IO ()
+    helper1 :: UserID → Map UserName (Set IPAddr) → IO ()
     helper1 (UserID uid) m = do
       putStrLn $ "UserID: " <> tshow uid
       mapM_ (uncurry helper2) $ M.toList m
-    helper2 ∷ UserName → Set IPAddr → IO ()
+    helper2 :: UserName → Set IPAddr → IO ()
     helper2 (UserName name) s = do
       putStrLn $ "  " <> "Name: " <> name
       mapM_ (putStrLn ∘ ("    " <>) ∘ showIP) s
@@ -131,16 +131,16 @@ printAliases = mapM_ (uncurry helper1) ∘ M.toList
                            <> tshow o3 <> "."
                            <> tshow o4
 
-processAliases ∷ [Identifier] → AliasMap
+processAliases :: [Identifier] → AliasMap
 processAliases xs = execState (mapM_ process xs) ø
   where
     process (n, u, i) = modify ((Just ∘ process' n i) `M.alter` u)
     process' name ip = M.insertWith (∪) name (sing ip) ∘ fromMaybe ø
 
-mergeUsers ∷ [Identifier] → [Identifier]
+mergeUsers :: [Identifier] → [Identifier]
 mergeUsers = map snd ∘ M.toList ∘ BMM.getDist ∘ identGroups
 
-identGroups ∷ [Identifier] → BiMultiMap Int Identifier
+identGroups :: [Identifier] → BiMultiMap Int Identifier
 identGroups xs = BMM.fromList
                $ zip [0..]
                $ map (mapMaybe (`IM.lookup` idxMap) ∘ T.flatten)
@@ -149,7 +149,7 @@ identGroups xs = BMM.fromList
   where
     (_, _, idxMap) = genIndex xs
 
-identGraph ∷ [Identifier] → G.Graph
+identGraph :: [Identifier] → G.Graph
 identGraph xs = G.buildG (iMin, iMax)
               $ flip evalState idxMap
               $ concatMapM process [iMin .. iMax]
@@ -167,18 +167,18 @@ identGraph xs = G.buildG (iMin, iMax)
                                     (p == q && x == y)
     (iMin, iMax, idxMap) = genIndex xs
 
-genIndex ∷ [Identifier] → (Int, Int, IntMap Identifier)
+genIndex :: [Identifier] → (Int, Int, IntMap Identifier)
 genIndex xs = (0, IM.size idxMap, idxMap)
   where
     idxMap = IM.fromList $ zip [0..] xs
 
-bigLog ∷ IO Text
+bigLog :: IO Text
 bigLog = readFile "./data/BIGLOG_2015.log"
 
-testTime ∷ Time
+testTime :: Time
 testTime = mkTime 1440200402000000000
 
-main ∷ IO ()
+main :: IO ()
 main = do
   fp <- fromMaybe (error "No file specified") ∘ headMay <$> getArgs
   aliases <- generateAliases <$> getConns (unpack fp)

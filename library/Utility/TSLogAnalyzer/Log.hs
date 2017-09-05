@@ -20,25 +20,25 @@ import           Prelude.Unicode
 
 import           Utility.TSLogAnalyzer.TimeParse (Time, mkTime)
 
-data LogEntry = LogEntry { entryTime    ∷ !Time
-                         , entryLevel   ∷ !LogLevel
-                         , entrySource  ∷ !LogSource
-                         , entryMessage ∷ !Text
+data LogEntry = LogEntry { entryTime    :: !Time
+                         , entryLevel   :: !LogLevel
+                         , entrySource  :: !LogSource
+                         , entryMessage :: !Text
                          } deriving (Eq, Show, Read, Generic)
 
-data Connection = Connection { connType   ∷ !ConnectType
-                             , connName   ∷ !UserName
-                             , connUID    ∷ !UserID
-                             , connIP     ∷ !(Maybe IP)
-                             , connReason ∷ !(Maybe Text)
+data Connection = Connection { connType   :: !ConnectType
+                             , connName   :: !UserName
+                             , connUID    :: !UserID
+                             , connIP     :: !(Maybe IP)
+                             , connReason :: !(Maybe Text)
                              } deriving (Eq, Show, Read, Generic)
 
-data Session = Session { sessStart  ∷ !Time
-                       , sessEnd    ∷ !Time
-                       , sessName   ∷ !UserName
-                       , sessUID    ∷ !UserID
-                       , sessIP     ∷ !IP
-                       , sessReason ∷ !Text
+data Session = Session { sessStart  :: !Time
+                       , sessEnd    :: !Time
+                       , sessName   :: !UserName
+                       , sessUID    :: !UserID
+                       , sessIP     :: !IP
+                       , sessReason :: !Text
                        } deriving (Eq, Show, Read, Generic)
 
 data LogLevel   = DEVELOP
@@ -72,22 +72,22 @@ data ConnectType = DCN
                  | CON
                  deriving (Eq, Ord, Enum, Show, Read, Generic)
 
-newtype UserName = UserName { getName ∷ Text }
+newtype UserName = UserName { getName :: Text }
                  deriving (Eq, Ord, Show, Read, Generic)
 
-newtype UserID = UserID { getUID ∷ Int }
+newtype UserID = UserID { getUID :: Int }
                deriving (Eq, Enum, Ord, Show, Read, Generic)
 
-data IP = IP { getAddr ∷ !Int
-             , getPort ∷ !Int
+data IP = IP { getAddr :: !Int
+             , getPort :: !Int
              } deriving (Eq, Ord, Show, Read, Generic)
 
 -- | Make an IP
-mkIP ∷ (Int, Int, Int, Int) → Int → IP
+mkIP :: (Int, Int, Int, Int) → Int → IP
 mkIP (o1, o2, o3, o4) = IP $ o1 * (256^3) + o2 * (256^2) + o3 * 256 + o4
 
 -- | Get the octets for a given IP
-getOctets ∷ IP → (Int, Int, Int, Int)
+getOctets :: IP → (Int, Int, Int, Int)
 getOctets (IP a _) = (o1, o2, o3, o4)
     where
     o4 = a `mod` 256

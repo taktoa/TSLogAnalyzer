@@ -19,24 +19,24 @@ import           Text.ParserCombinators.ReadP
 
 import           Utility.TSLogAnalyzer.Util
 
-newtype Time = Time { getUnixNanoTime ∷ Int }
+newtype Time = Time { getUnixNanoTime :: Int }
              deriving (Eq, Ord, Show, Read, Generic)
 
-mkTime ∷ Int → Time
+mkTime :: Int → Time
 mkTime = Time
 
-newtype DiffTime = DiffTime { getNanoDiff ∷ Int }
+newtype DiffTime = DiffTime { getNanoDiff :: Int }
              deriving (Eq, Ord, Show, Read, Generic)
 
-mkDiffTime ∷ Int → DiffTime
+mkDiffTime :: Int → DiffTime
 mkDiffTime = DiffTime
 
 -- Shamelessly stolen from Conal Elliot's vector-space package
 class AffineSpace ρ where
   type Diff ρ
-  (.-.) ∷ ρ → ρ → Diff ρ
-  (.+^) ∷ ρ → Diff ρ → ρ
-  (.-^) ∷ ρ → Diff ρ → ρ
+  (.-.) :: ρ → ρ → Diff ρ
+  (.+^) :: ρ → Diff ρ → ρ
+  (.-^) :: ρ → Diff ρ → ρ
 
 instance AffineSpace Time where
   type Diff Time = DiffTime
@@ -44,13 +44,13 @@ instance AffineSpace Time where
   (Time a) .+^ (DiffTime b) = Time (a + b)
   (Time a) .-^ (DiffTime b) = Time (a - b)
 
-data TSDate = TSDate { tsYear       ∷ Int
-                     , tsMonth      ∷ Int
-                     , tsDay        ∷ Int
-                     , tsHour       ∷ Int
-                     , tsMinute     ∷ Int
-                     , tsSecond     ∷ Int
-                     , tsFractional ∷ Int
+data TSDate = TSDate { tsYear       :: Int
+                     , tsMonth      :: Int
+                     , tsDay        :: Int
+                     , tsHour       :: Int
+                     , tsMinute     :: Int
+                     , tsSecond     :: Int
+                     , tsFractional :: Int
                      } deriving (Eq)
 
 instance Show TSDate where
@@ -74,10 +74,10 @@ instance Read TSDate where
       periodP = char '.'
       numP = read <$> munch1 isDigit
 
-timeParser ∷ Parser Time
+timeParser :: Parser Time
 timeParser = toUnix ∘ readUTC ∘ tshow <$> tsDateParser
 
-tsDateParser ∷ Parser TSDate
+tsDateParser :: Parser TSDate
 tsDateParser = mkTSDate <$> ((,,) <$> num <* hyphen <*> num <* hyphen <*> num)
                         <*  space
                         <*> ((,,) <$> num <* colon  <*> num <* colon  <*> num)
@@ -87,13 +87,13 @@ tsDateParser = mkTSDate <$> ((,,) <$> num <* hyphen <*> num <* hyphen <*> num)
     num  = decimal :: Parser Int
     mkTSDate (yr, mo, dy) (hr, mn, sc) = TSDate yr mo dy hr mn sc
 
-readUTC ∷ Text → UTCTime
+readUTC :: Text → UTCTime
 readUTC = fromJust ∘ readMay ∘ unpack
 
-toUnix ∷ UTCTime → Time
+toUnix :: UTCTime → Time
 toUnix = mkTime ∘ truncate ∘ toNanos ∘ utcTimeToPOSIXSeconds
   where
-    toNanos ∷ Num n ⇒ n → n
+    toNanos :: Num n ⇒ n → n
     toNanos s = s * 1000000000
 
 instance Hashable Time

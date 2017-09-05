@@ -18,22 +18,22 @@ import qualified Data.ListLike as LL
 import           Data.Text.ICU.Char   (Bool_ (WhiteSpace), property)
 
 
-concatMapM ∷ (Monad μ,
+concatMapM :: (Monad μ,
               Traversable τ,
               LL.ListLike λ β,
               LL.ListLike (τ λ) λ) ⇒ (α → μ λ) → τ α → μ λ
 concatMapM f xs = LL.concat <$> mapM f xs
 
-singleQuote, doubleQuote ∷ Parser Char
-openParen, closeParen    ∷ Parser Char
-colon, semicolon         ∷ Parser Char
-period, comma            ∷ Parser Char
-hyphen                   ∷ Parser Char
-space                    ∷ Parser Char
-whitespace               ∷ Parser Char
-whitespace'              ∷ Parser Text
+singleQuote, doubleQuote :: Parser Char
+openParen, closeParen    :: Parser Char
+colon, semicolon         :: Parser Char
+period, comma            :: Parser Char
+hyphen                   :: Parser Char
+space                    :: Parser Char
+whitespace               :: Parser Char
+whitespace'              :: Parser Text
 
-ε ∷ Alternative φ ⇒ φ α
+ε :: Alternative φ ⇒ φ α
 ε = empty
 
 singleQuote = A.char '\''
@@ -49,34 +49,34 @@ space       = A.char ' '
 whitespace  = A.satisfy (property WhiteSpace)
 whitespace' = A.takeWhile (property WhiteSpace)
 
-optional ∷ Parser α → Parser ()
+optional :: Parser α → Parser ()
 optional p = void $ A.option Nothing (Just <$> p)
 
-optionMaybe ∷ MonadPlus μ ⇒ Parser α → Parser (μ α)
+optionMaybe :: MonadPlus μ ⇒ Parser α → Parser (μ α)
 optionMaybe p = A.option mzero (return <$> p)
 
-(<~>) ∷ Functor φ ⇒ (α → β) → (γ → φ α) → γ → φ β
+(<~>) :: Functor φ ⇒ (α → β) → (γ → φ α) → γ → φ β
 f <~> g = \x -> f <$> g x
 infixr 9 <~>
 
-(<∘>) ∷ Functor φ ⇒ (α → β) → (γ → φ α) → γ → φ β
+(<∘>) :: Functor φ ⇒ (α → β) → (γ → φ α) → γ → φ β
 f <∘> g = \x -> f <$> g x
 infixr 9 <∘>
 
-toPairs ∷ [α] → [(α, α)]
+toPairs :: [α] → [(α, α)]
 toPairs []       = []
 toPairs [_]      = []
 toPairs (x:y:xs) = (x, y) : toPairs xs
 
 data GenParser α where
-  GPPure   ∷ α → GenParser a
-  GPThen   ∷ GenParser (α → β) → GenParser α → GenParser β
-  GPChoose ∷ GenParser α → GenParser α → GenParser α
-  GPMany   ∷ GenParser α → GenParser [α]
-  GPPeek   ∷ GenParser Char
-  GPChar   ∷ GenParser Char
-  GPString ∷ IsString ς ⇒ GenParser ς
-  GPLook   ∷ IsString ς ⇒ GenParser ς
+  GPPure   :: α → GenParser a
+  GPThen   :: GenParser (α → β) → GenParser α → GenParser β
+  GPChoose :: GenParser α → GenParser α → GenParser α
+  GPMany   :: GenParser α → GenParser [α]
+  GPPeek   :: GenParser Char
+  GPChar   :: GenParser Char
+  GPString :: IsString ς ⇒ GenParser ς
+  GPLook   :: IsString ς ⇒ GenParser ς
 
 class Applicative α ⇒ IsParser α where {}
 
