@@ -50,7 +50,7 @@ nameParser ∷ Parser UserName
 nameParser = UserName <$> (singleQuote *> untilSingleQuote <* singleQuote)
 
 uidParser ∷ Parser UserID
-uidParser = UserID <$> inParens (string "id" <* colon *> decimal)
+uidParser = UserID <$> inParens (string "id" *> colon *> decimal)
 
 rsnParser ∷ Parser Text
 rsnParser = do

@@ -183,4 +183,3 @@ main = do
   fp <- fromMaybe (error "No file specified") ∘ headMay <$> getArgs
   aliases <- generateAliases <$> getConns (unpack fp)
   printAliases $ processAliases $ mergeUsers aliases
-
