@@ -93,7 +93,7 @@ readUTC = fromJust ∘ readMay ∘ unpack
 toUnix :: UTCTime → Time
 toUnix = mkTime ∘ truncate ∘ toNanos ∘ utcTimeToPOSIXSeconds
   where
-    toNanos :: Num n ⇒ n → n
+    toNanos :: Num n => n → n
     toNanos s = s * 1000000000
 
 instance Hashable Time

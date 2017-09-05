@@ -50,16 +50,16 @@ import           Utility.TSLogAnalyzer.TimeParse
 
 import           Utility.TSLogAnalyzer.Util
 
-(!@) :: Ord κ ⇒ Map κ α → κ → Maybe α
+(!@) :: Ord κ => Map κ α → κ → Maybe α
 a !@ b = M.lookup b a
 
-ø :: Monoid μ ⇒ μ
+ø :: Monoid μ => μ
 ø = mempty
 
-sing :: MonoPointed μ ⇒ Element μ → μ
+sing :: MonoPointed μ => Element μ → μ
 sing = opoint
 
-range :: (Ord α, Foldable τ, Traversable τ) ⇒ τ α → (α, α)
+range :: (Ord α, Foldable τ, Traversable τ) => τ α → (α, α)
 range xs = Fold.foldr1 cmp $ dupe <$> xs
   where cmp (a, b) (c, d) = (min a c, max b d)
 
