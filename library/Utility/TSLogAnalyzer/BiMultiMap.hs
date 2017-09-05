@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NoImplicitPrelude         #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TupleSections             #-}
 
@@ -14,7 +15,6 @@ module Utility.TSLogAnalyzer.BiMultiMap ( BiMultiMap
                                         ) where
 
 import           ClassyPrelude   hiding (fromList)
-import           Prelude.Unicode
 
 import qualified Data.List       as L
 import qualified Data.Map.Strict as M
@@ -47,9 +47,9 @@ getDist (BMM m _) = M.map fst m
 
 -- | Create a BiMultiMap from the given list of key / value set pairs
 fromList :: (Ord α, Ord β) => [(α, [β])] -> BiMultiMap α β
-fromList = uncurry BMM ∘ (apply forward &&& apply backward)
+fromList = uncurry BMM . (apply forward &&& apply backward)
   where
-    apply f = M.fromList ∘ L.concat ∘ fmap f
+    apply f = M.fromList . L.concat . fmap f
     forward  (a, b) = case b of
       (_:_) -> [(a, (L.minimum b, S.fromList b))]
       _     -> []

@@ -1,10 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Parse a log message
 module Utility.TSLogAnalyzer.MsgParse where
 
 import           ClassyPrelude
-import           Prelude.Unicode
 
 import           Data.Attoparsec.Text       (Parser, decimal, string, takeTill)
 import qualified Data.Attoparsec.Text       as A
@@ -13,7 +13,7 @@ import           Utility.TSLogAnalyzer.Log
 import           Utility.TSLogAnalyzer.Util
 
 connParse :: Text -> Maybe Connection
-connParse = A.maybeResult ∘ A.parse connectionParser
+connParse = A.maybeResult . A.parse connectionParser
 
 connectionParser :: Parser Connection
 connectionParser = conParser <|> dcnParser
@@ -44,7 +44,7 @@ inParens :: Parser a -> Parser a
 inParens p = openParen *> p <* closeParen
 
 untilSingleQuote :: Parser Text
-untilSingleQuote = takeTill (≡ '\'')
+untilSingleQuote = takeTill (== '\'')
 
 nameParser :: Parser UserName
 nameParser = UserName <$> (singleQuote *> untilSingleQuote <* singleQuote)

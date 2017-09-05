@@ -16,71 +16,123 @@ module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
                                  ) where
 
 import           ClassyPrelude
-import           Prelude.Unicode
 
 import           Utility.TSLogAnalyzer.TimeParse (Time, mkTime)
 
-data LogEntry = LogEntry { entryTime    :: !Time
-                         , entryLevel   :: !LogLevel
-                         , entrySource  :: !LogSource
-                         , entryMessage :: !Text
-                         } deriving (Eq, Show, Read, Generic)
+--------------------------------------------------------------------------------
 
-data Connection = Connection { connType   :: !ConnectType
-                             , connName   :: !UserName
-                             , connUID    :: !UserID
-                             , connIP     :: !(Maybe IP)
-                             , connReason :: !(Maybe Text)
-                             } deriving (Eq, Show, Read, Generic)
+data LogEntry
+  = LogEntry
+    { entryTime    :: !Time
+    , entryLevel   :: !LogLevel
+    , entrySource  :: !LogSource
+    , entryMessage :: !Text
+    }
+  deriving (Eq, Show, Read, Generic)
 
-data Session = Session { sessStart  :: !Time
-                       , sessEnd    :: !Time
-                       , sessName   :: !UserName
-                       , sessUID    :: !UserID
-                       , sessIP     :: !IP
-                       , sessReason :: !Text
-                       } deriving (Eq, Show, Read, Generic)
+instance Hashable LogEntry
 
-data LogLevel   = DEVELOP
-                | INFO
-                | WARNING
-                | ERROR
-                | CRITICAL
-                deriving (Eq, Ord, Enum, Show, Read, Generic)
+--------------------------------------------------------------------------------
 
-data LogSource  = Accounting
-                | BanManager
-                | CIDRManager
-                | ChanClients
-                | DatabaseQuery
-                | FileHelp
-                | FileManager
-                | ParamParser
-                | PermGroupMgr
-                | PktHandler
-                | Query
-                | SQL
-                | ServerLibPriv
-                | ServerMain
-                | StringHelp
-                | VirtualServer
-                | VirtualServerBase
-                | VirtualSvrMgr
-                deriving (Eq, Ord, Enum, Show, Read, Generic)
+data Connection
+  = Connection
+    { connType   :: !ConnectType
+    , connName   :: !UserName
+    , connUID    :: !UserID
+    , connIP     :: !(Maybe IP)
+    , connReason :: !(Maybe Text)
+    }
+  deriving (Eq, Show, Read, Generic)
 
-data ConnectType = DCN
-                 | CON
-                 deriving (Eq, Ord, Enum, Show, Read, Generic)
+instance Hashable Connection
 
-newtype UserName = UserName { getName :: Text }
-                 deriving (Eq, Ord, Show, Read, Generic)
+--------------------------------------------------------------------------------
 
-newtype UserID = UserID { getUID :: Int }
-               deriving (Eq, Enum, Ord, Show, Read, Generic)
+data Session
+  = Session
+    { sessStart  :: !Time
+    , sessEnd    :: !Time
+    , sessName   :: !UserName
+    , sessUID    :: !UserID
+    , sessIP     :: !IP
+    , sessReason :: !Text
+    }
+  deriving (Eq, Show, Read, Generic)
 
-data IP = IP { getAddr :: !Int
-             , getPort :: !Int
-             } deriving (Eq, Ord, Show, Read, Generic)
+instance Hashable Session
+
+--------------------------------------------------------------------------------
+
+data LogLevel
+  = DEVELOP
+  | INFO
+  | WARNING
+  | ERROR
+  | CRITICAL
+  deriving (Eq, Ord, Enum, Show, Read, Generic)
+
+instance Hashable LogLevel
+
+--------------------------------------------------------------------------------
+
+data LogSource
+  = Accounting
+  | BanManager
+  | CIDRManager
+  | ChanClients
+  | DatabaseQuery
+  | FileHelp
+  | FileManager
+  | ParamParser
+  | PermGroupMgr
+  | PktHandler
+  | Query
+  | SQL
+  | ServerLibPriv
+  | ServerMain
+  | StringHelp
+  | VirtualServer
+  | VirtualServerBase
+  | VirtualSvrMgr
+  deriving (Eq, Ord, Enum, Show, Read, Generic)
+
+instance Hashable LogSource
+
+--------------------------------------------------------------------------------
+
+data ConnectType
+  = DCN
+  | CON
+  deriving (Eq, Ord, Enum, Show, Read, Generic)
+
+instance Hashable ConnectType
+
+--------------------------------------------------------------------------------
+
+newtype UserName
+  = UserName { getName :: Text }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance Hashable UserName
+
+--------------------------------------------------------------------------------
+
+newtype UserID
+  = UserID { getUID :: Int }
+  deriving (Eq, Enum, Ord, Show, Read, Generic)
+
+instance Hashable UserID
+
+--------------------------------------------------------------------------------
+
+data IP
+  = IP
+    { getAddr :: !Int
+    , getPort :: !Int
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance Hashable IP
 
 -- | Make an IP
 mkIP :: (Int, Int, Int, Int) -> Int -> IP
@@ -95,12 +147,4 @@ getOctets (IP a _) = (o1, o2, o3, o4)
     o2 = ((((a - o4) `div` 256) - o3) `div` 256) `mod` 256
     o1 = ((((((a - o4) `div` 256) - o3) `div` 256) - o2) `div` 256) `mod` 256
 
-instance Hashable LogEntry
-instance Hashable Connection
-instance Hashable Session
-instance Hashable ConnectType
-instance Hashable UserName
-instance Hashable UserID
-instance Hashable LogLevel
-instance Hashable LogSource
-instance Hashable IP
+--------------------------------------------------------------------------------

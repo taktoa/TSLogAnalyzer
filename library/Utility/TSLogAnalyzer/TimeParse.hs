@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE NoImplicitPrelude         #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE TypeFamilies              #-}
 
 -- | Parse a time from the log
@@ -8,7 +9,6 @@ module  Utility.TSLogAnalyzer.TimeParse where
 
 import           ClassyPrelude
 import           Prelude                      (Read (..), read)
-import           Prelude.Unicode
 
 import           Data.Attoparsec.Text         (Parser, decimal)
 import           Data.Char                    (isDigit)
@@ -75,7 +75,7 @@ instance Read TSDate where
       numP = read <$> munch1 isDigit
 
 timeParser :: Parser Time
-timeParser = toUnix ∘ readUTC ∘ tshow <$> tsDateParser
+timeParser = toUnix . readUTC . tshow <$> tsDateParser
 
 tsDateParser :: Parser TSDate
 tsDateParser = mkTSDate <$> ((,,) <$> num <* hyphen <*> num <* hyphen <*> num)
@@ -88,10 +88,10 @@ tsDateParser = mkTSDate <$> ((,,) <$> num <* hyphen <*> num <* hyphen <*> num)
     mkTSDate (yr, mo, dy) (hr, mn, sc) = TSDate yr mo dy hr mn sc
 
 readUTC :: Text -> UTCTime
-readUTC = fromJust ∘ readMay ∘ unpack
+readUTC = fromJust . readMay . unpack
 
 toUnix :: UTCTime -> Time
-toUnix = mkTime ∘ truncate ∘ toNanos ∘ utcTimeToPOSIXSeconds
+toUnix = mkTime . truncate . toNanos . utcTimeToPOSIXSeconds
   where
     toNanos :: Num n => n -> n
     toNanos s = s * 1000000000

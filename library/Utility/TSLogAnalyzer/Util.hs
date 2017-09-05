@@ -47,16 +47,12 @@ whitespace' = A.takeWhile (property WhiteSpace)
 optional :: Parser α -> Parser ()
 optional p = void $ A.option Nothing (Just <$> p)
 
-optionMaybe :: MonadPlus μ => Parser α -> Parser (μ α)
+optionMaybe :: (MonadPlus μ) => Parser α -> Parser (μ α)
 optionMaybe p = A.option mzero (return <$> p)
 
-(<~>) :: Functor φ => (α -> β) -> (γ -> φ α) -> γ -> φ β
+(<~>) :: (Functor φ) => (α -> β) -> (γ -> φ α) -> γ -> φ β
 f <~> g = \x -> f <$> g x
 infixr 9 <~>
-
-(<∘>) :: Functor φ => (α -> β) -> (γ -> φ α) -> γ -> φ β
-f <∘> g = \x -> f <$> g x
-infixr 9 <∘>
 
 toPairs :: [α] -> [(α, α)]
 toPairs []       = []
@@ -84,7 +80,7 @@ class Applicative α => IsParser α where {}
 -- instance Functor GenParser where
 --   fmap f (GenParser m) = GenParser (fmap f m)
 -- instance Monad GenParser where
---   return           = GenParser ∘ return
---   fail             = GenParser ∘ fail
---   (GenParser m) >>= f  = GenParser $ m >>= getReadP ∘ f
+--   return           = GenParser . return
+--   fail             = GenParser . fail
+--   (GenParser m) >>= f  = GenParser $ m >>= getReadP . f
 

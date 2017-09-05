@@ -1,13 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
 -- | Parse a log file
 module Utility.TSLogAnalyzer.Parse where -- (logParse, parseConns) where
 
-import           ClassyPrelude
-import           Prelude.Unicode
+import           ClassyPrelude                   hiding (optional)
 
 import           Control.Monad                   (join, void)
+
+import qualified Data.Text.Encoding              as Text
 
 import           Data.Attoparsec.Text            (Parser, parse)
 import qualified Data.Attoparsec.Text            as A
@@ -19,13 +21,13 @@ import           Utility.TSLogAnalyzer.Util      (optional, whitespace', (<~>))
 
 -- | Parse the log in the given file
 logParse :: FilePath -> IO [LogEntry]
-logParse = parseLogs <~> readFile
+logParse = (parseLogs . Text.decodeUtf8) <~> readFile
 
 -- | Parse the log entries in the given string
 parseLogs :: Text -> [LogEntry]
 parseLogs = sortBy (comparing entryTime)
-          ∘ mapMaybe (A.maybeResult ∘ A.parse entryParser ∘ (<> "\n"))
-          ∘ lines
+          . mapMaybe (A.maybeResult . A.parse entryParser . (<> "\n"))
+          . lines
 
 -- | Parse many connections
 parseConns :: [LogEntry] -> [(Time, Connection)]
