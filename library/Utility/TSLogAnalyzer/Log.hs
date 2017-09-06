@@ -12,8 +12,9 @@ module Utility.TSLogAnalyzer.Log
   , ConnectType (..)
   , UserName    (..)
   , UserID      (..)
-  , IP          (..)
-  , fromOctets, getOctets
+  , IP          (..), fromOctets, toOctets
+  , TLAddr      (..)
+  , Octets
   ) where
 
 import           ClassyPrelude
@@ -42,7 +43,7 @@ data Connection
     { connType   :: !ConnectType
     , connName   :: !UserName
     , connUID    :: !UserID
-    , connIP     :: !(Maybe IP)
+    , connAddr   :: !(Maybe TLAddr)
     , connReason :: !(Maybe Text)
     }
   deriving (Eq, Show, Read, Generic)
@@ -57,7 +58,7 @@ data Session
     , sessEnd    :: !Time
     , sessName   :: !UserName
     , sessUID    :: !UserID
-    , sessIP     :: !IP
+    , sessAddr   :: !TLAddr
     , sessReason :: !Text
     }
   deriving (Eq, Show, Read, Generic)
@@ -169,6 +170,6 @@ data TLAddr
     }
   deriving (Eq, Show, Read, Generic)
 
-instance Hashable UDPAddr
+instance Hashable TLAddr
 
 --------------------------------------------------------------------------------

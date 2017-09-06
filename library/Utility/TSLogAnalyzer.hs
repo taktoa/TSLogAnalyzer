@@ -109,9 +109,8 @@ dcnSC time uid = modify modder
                    }
     addDelta (last, acc) = (last, (time .+^ acc) .-. last)
 
-type IPAddr = (Int, Int, Int, Int)
-type AliasMap = Map UserID (Map UserName (Set IPAddr))
-type Identifier = (UserName, UserID, IPAddr)
+type AliasMap = Map UserID (Map UserName (Set Octets))
+type Identifier = (UserName, UserID, Octets)
 
 getConns :: FilePath -> IO [(Time, Connection)]
 getConns fp = parseConns <$> logParse fp
@@ -119,8 +118,8 @@ getConns fp = parseConns <$> logParse fp
 generateAliases :: [(Time, Connection)] -> [Identifier]
 generateAliases = hashNub . mapMaybe (process . snd)
   where
-    process (Connection _ _    _   Nothing   _) = Nothing
-    process (Connection _ name uid (Just ip) _) = Just (name, uid, getOctets ip)
+    process (Connection _ _ _   Nothing  _) = Nothing
+    process (Connection _ n uid (Just a) _) = Just (n, uid, toOctets (tlAddr a))
 
 printAliases :: [Identifier] -> IO ()
 printAliases = mapM_ printAlias
@@ -134,12 +133,12 @@ printAliases = mapM_ printAlias
 printAliasMap :: AliasMap -> IO ()
 printAliasMap = mapM_ (uncurry helper1) . Map.toList
   where
-    helper1 :: UserID -> Map UserName (Set IPAddr) -> IO ()
+    helper1 :: UserID -> Map UserName (Set Octets) -> IO ()
     helper1 (UserID uid) m = do
       putStrLn $ "UserID: " <> tshow uid
       mapM_ (uncurry helper2) (Map.toList m)
 
-    helper2 :: UserName -> Set IPAddr -> IO ()
+    helper2 :: UserName -> Set Octets -> IO ()
     helper2 (UserName name) s = do
       putStrLn ("  " <> "Name: " <> name)
       mapM_ (putStrLn . ("    " <>) . showIP) s

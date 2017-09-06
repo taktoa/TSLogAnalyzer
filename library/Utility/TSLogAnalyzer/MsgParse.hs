@@ -23,7 +23,7 @@ conParser = string "client connected " >>
             mkCON <$> nameParser
                   <*> uidParser
                   <*  string " from "
-                  <*> ipParser
+                  <*> addrParser
                   <*  semicolon
 
 dcnParser :: Parser Connection
@@ -34,11 +34,11 @@ dcnParser = string "client disconnected " >>
                   <*> rsnParser
                   <*  semicolon
 
-mkCON :: UserName -> UserID -> IP -> Connection
+mkCON :: UserName -> UserID -> TLAddr -> Connection
 mkCON name uid ip  = Connection CON name uid (Just ip) Nothing
 
 mkDCN :: UserName -> UserID -> Text -> Connection
-mkDCN name uid rsn = Connection DCN name uid Nothing   (Just rsn)
+mkDCN name uid rsn = Connection DCN name uid Nothing (Just rsn)
 
 inParens :: Parser a -> Parser a
 inParens p = openParen *> p <* closeParen
@@ -61,16 +61,18 @@ rsnParser = do
     scanner '\'' ';' = Nothing
     scanner _    c   = Just c
 
-ipParser :: Parser IP
-ipParser = mkIP <$> octetParser
-                <*  colon
-                <*> decimal
+addrParser :: Parser TLAddr
+addrParser = TLAddr <$> octetParser
+                    <*  colon
+                    <*> decimal
 
-octetParser :: Parser (Int, Int, Int, Int)
-octetParser = (,,,) <$> decimal
-                    <*  period
-                    <*> decimal
-                    <*  period
-                    <*> decimal
-                    <*  period
-                    <*> decimal
+octetParser :: Parser IP
+octetParser = do
+  o1 <- decimal
+  period
+  o2 <- decimal
+  period
+  o3 <- decimal
+  period
+  o4 <- decimal
+  pure (fromOctets (o1, o2, o3, o4))
