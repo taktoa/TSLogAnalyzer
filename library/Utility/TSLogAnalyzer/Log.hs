@@ -3,21 +3,24 @@
 {-# LANGUAGE NoImplicitPrelude          #-}
 
 -- | Types for log parsing
-module Utility.TSLogAnalyzer.Log ( LogEntry    (..)
-                                 , Connection  (..)
-                                 , Session     (..)
-                                 , LogLevel    (..)
-                                 , LogSource   (..)
-                                 , ConnectType (..)
-                                 , UserName    (..)
-                                 , UserID      (..)
-                                 , IP          (..)
-                                 , mkIP, getOctets
-                                 ) where
+module Utility.TSLogAnalyzer.Log
+  ( LogEntry    (..)
+  , Connection  (..)
+  , Session     (..)
+  , LogLevel    (..)
+  , LogSource   (..)
+  , ConnectType (..)
+  , UserName    (..)
+  , UserID      (..)
+  , IP          (..)
+  , fromOctets, getOctets
+  ) where
 
 import           ClassyPrelude
 
 import           Utility.TSLogAnalyzer.TimeParse (Time, mkTime)
+
+import           Flow
 
 --------------------------------------------------------------------------------
 
@@ -125,26 +128,47 @@ instance Hashable UserID
 
 --------------------------------------------------------------------------------
 
-data IP
-  = IP
-    { getAddr :: !Int
-    , getPort :: !Int
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
+type Octets = (Word8, Word8, Word8, Word8)
+
+--------------------------------------------------------------------------------
+
+newtype IP
+  = IP { fromIP :: Int }
+  deriving (Eq, Enum, Show, Read, Generic)
 
 instance Hashable IP
 
--- | Make an IP
-mkIP :: (Int, Int, Int, Int) -> Int -> IP
-mkIP (o1, o2, o3, o4) = IP $ o1 * (256^3) + o2 * (256^2) + o3 * 256 + o4
+-- | Make an IP from a tuple of octets
+fromOctets :: Octets -> IP
+fromOctets (o1, o2, o3, o4) = [ fi o1 * 16777216
+                              , fi o2 * 65536
+                              , fi o3 * 256
+                              , fi o4
+                              ] |> sum |> IP
+  where
+    fi = fromIntegral :: Word8 -> Int
 
 -- | Get the octets for a given IP
-getOctets :: IP -> (Int, Int, Int, Int)
-getOctets (IP a _) = (o1, o2, o3, o4)
-    where
-    o4 = a `mod` 256
-    o3 = ((a - o4) `div` 256) `mod` 256
-    o2 = ((((a - o4) `div` 256) - o3) `div` 256) `mod` 256
+toOctets :: IP -> Octets
+toOctets (IP a) = (fi o1, fi o2, fi o3, fi o4)
+  where
     o1 = ((((((a - o4) `div` 256) - o3) `div` 256) - o2) `div` 256) `mod` 256
+    o2 = ((((a - o4) `div` 256) - o3) `div` 256) `mod` 256
+    o3 = ((a - o4) `div` 256) `mod` 256
+    o4 = a `mod` 256
+    -- this is safe because we always mod out by 256 anyway
+    fi = fromIntegral :: Int -> Word8
+
+--------------------------------------------------------------------------------
+
+-- | Transport-layer protocol (TCP/UDP) address.
+data TLAddr
+  = TLAddr
+    { tlAddr :: !IP
+    , tlPort :: !Int
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance Hashable UDPAddr
 
 --------------------------------------------------------------------------------

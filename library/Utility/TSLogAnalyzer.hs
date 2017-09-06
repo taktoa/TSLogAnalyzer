@@ -19,7 +19,7 @@ import qualified Data.Foldable                    as Fold
 import qualified Data.Traversable                 as Trav
 
 import qualified Data.Graph                       as G
-import qualified Data.IntMap.Strict               as IMap
+import qualified Data.IntervalMap.FingerTree      as IMap
 import qualified Data.List                        as L
 import qualified Data.ListLike                    as LL
 import qualified Data.Map.Strict                  as Map
@@ -62,7 +62,8 @@ sing = opoint
 
 range :: (Ord α, Foldable τ, Traversable τ) => τ α -> (α, α)
 range xs = Fold.foldr1 cmp $ dupe <$> xs
-  where cmp (a, b) (c, d) = (min a c, max b d)
+  where
+    cmp (a, b) (c, d) = (min a c, max b d)
 
 data ServerState
   = SState
@@ -103,8 +104,8 @@ conSC time uid = modify modder
 dcnSC :: Time -> UserID -> State ServerState ()
 dcnSC time uid = modify modder
   where
-    modder ss = ss { usersOnline = Set.delete uid $ usersOnline ss
-                   , userTime    = Map.adjust addDelta uid $ userTime ss
+    modder ss = ss { usersOnline = Set.delete uid (usersOnline ss)
+                   , userTime    = Map.adjust addDelta uid (userTime ss)
                    }
     addDelta (last, acc) = (last, (time .+^ acc) .-. last)
 
@@ -113,7 +114,7 @@ type AliasMap = Map UserID (Map UserName (Set IPAddr))
 type Identifier = (UserName, UserID, IPAddr)
 
 getConns :: FilePath -> IO [(Time, Connection)]
-getConns = parseConns <~> logParse
+getConns fp = parseConns <$> logParse fp
 
 generateAliases :: [(Time, Connection)] -> [Identifier]
 generateAliases = hashNub . mapMaybe (process . snd)
@@ -121,21 +122,30 @@ generateAliases = hashNub . mapMaybe (process . snd)
     process (Connection _ _    _   Nothing   _) = Nothing
     process (Connection _ name uid (Just ip) _) = Just (name, uid, getOctets ip)
 
-printAliases :: AliasMap -> IO ()
-printAliases = mapM_ (uncurry helper1) . Map.toList
+printAliases :: [Identifier] -> IO ()
+printAliases = mapM_ printAlias
+  where
+    printAlias :: Identifier -> IO ()
+    printAlias (UserName name, UserID uid, ip) = print (name, uid, showIP ip)
+
+    showIP (o1, o2, o3, o4)
+      = mconcat [tshow o1, ".", tshow o2, ".", tshow o3, ".", tshow o4]
+
+printAliasMap :: AliasMap -> IO ()
+printAliasMap = mapM_ (uncurry helper1) . Map.toList
   where
     helper1 :: UserID -> Map UserName (Set IPAddr) -> IO ()
     helper1 (UserID uid) m = do
       putStrLn $ "UserID: " <> tshow uid
-      mapM_ (uncurry helper2) $ Map.toList m
+      mapM_ (uncurry helper2) (Map.toList m)
+
     helper2 :: UserName -> Set IPAddr -> IO ()
     helper2 (UserName name) s = do
-      putStrLn $ "  " <> "Name: " <> name
+      putStrLn ("  " <> "Name: " <> name)
       mapM_ (putStrLn . ("    " <>) . showIP) s
-    showIP (o1, o2, o3, o4) = tshow o1 <> "."
-                           <> tshow o2 <> "."
-                           <> tshow o3 <> "."
-                           <> tshow o4
+
+    showIP (o1, o2, o3, o4)
+      = mconcat [tshow o1, ".", tshow o2, ".", tshow o3, ".", tshow o4]
 
 processAliases :: [Identifier] -> AliasMap
 processAliases xs = execState (mapM_ process xs) ø
@@ -149,7 +159,7 @@ mergeUsers = map snd . Map.toList . BMM.getDist . identGroups
 identGroups :: [Identifier] -> BiMultiMap Int Identifier
 identGroups xs = BMM.fromList
                $ zip [0..]
-               $ map (mapMaybe (`IMap.lookup` idxMap) . Tree.flatten)
+               $ map (mapMaybe (`Map.lookup` idxMap) . Tree.flatten)
                $ G.components
                $ identGraph xs
   where
@@ -162,21 +172,21 @@ identGraph xs = G.buildG (iMin, iMax)
   where
     process i = do
       imap <- get
-      put (IMap.delete i imap)
-      return $ concat $ procMap imap i <$> IMap.lookup i imap
+      put (Map.delete i imap)
+      return $ concat $ procMap imap i <$> Map.lookup i imap
     procMap imap i = zip (repeat i)
-                   . IMap.keys
-                   . flip IMap.filter imap
+                   . Map.keys
+                   . flip Map.filter imap
                    . equalElem
     equalElem (a, p, x) (b, q, y) = (a == b && p == q) ||
                                     (a == b && x == y) ||
                                     (p == q && x == y)
     (iMin, iMax, idxMap) = genIndex xs
 
-genIndex :: [Identifier] -> (Int, Int, IntMap Identifier)
-genIndex xs = (0, IMap.size idxMap, idxMap)
+genIndex :: [Identifier] -> (Int, Int, Map Int Identifier)
+genIndex xs = (0, Map.size idxMap, idxMap)
   where
-    idxMap = IMap.fromList $ zip [0..] xs
+    idxMap = Map.fromList $ zip [0..] xs
 
 bigLog :: IO Text
 bigLog = Text.decodeUtf8 <$> readFile "./data/BIGLOG_2015.log"
@@ -188,4 +198,5 @@ main :: IO ()
 main = do
   fp <- fromMaybe (error "No file specified") . headMay <$> getArgs
   aliases <- generateAliases <$> getConns (unpack fp)
-  printAliases $ processAliases $ mergeUsers aliases
+  printAliases aliases
+  -- printAliases $ processAliases $ mergeUsers aliases

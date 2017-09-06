@@ -50,17 +50,13 @@ optional p = void $ A.option Nothing (Just <$> p)
 optionMaybe :: (MonadPlus μ) => Parser α -> Parser (μ α)
 optionMaybe p = A.option mzero (return <$> p)
 
-(<~>) :: (Functor φ) => (α -> β) -> (γ -> φ α) -> γ -> φ β
-f <~> g = \x -> f <$> g x
-infixr 9 <~>
-
 toPairs :: [α] -> [(α, α)]
 toPairs []       = []
 toPairs [_]      = []
 toPairs (x:y:xs) = (x, y) : toPairs xs
 
 data GenParser α where
-  GPPure   :: α -> GenParser a
+  GPPure   :: α -> GenParser α
   GPThen   :: GenParser (α -> β) -> GenParser α -> GenParser β
   GPChoose :: GenParser α -> GenParser α -> GenParser α
   GPMany   :: GenParser α -> GenParser [α]
