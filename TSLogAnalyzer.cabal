@@ -15,6 +15,7 @@ tested-with:            GHC == 8.0
 
 library
     build-depends:      base < 5
+                      , flow
                       , classy-prelude
                       , containers
                       , unordered-containers
@@ -42,12 +43,6 @@ library
                         -fno-warn-unused-imports
                         -fno-warn-unused-do-bind
     hs-source-dirs:     library
-    -- other-extensions:   UnicodeSyntax
-    --                   , OverloadedStrings
-    --                   , BangPatterns
-    --                   , TupleSections
-    --                   , TypeSynonymInstances
-    --                   , ScopedTypeVariables
 
 executable TSLogAnalyzer
     build-depends:      base
@@ -56,4 +51,3 @@ executable TSLogAnalyzer
     ghc-options:        -threaded
     hs-source-dirs:     executable
     main-is:            Main.hs
-    default-extensions: UnicodeSyntax
