@@ -14,6 +14,7 @@ clean:
 	-@cabal clean
 	-@rm -rf *.tix
 	-@rm -rf .hpc
+	-@rm -rf cabal.project.local
 	-@rm -rf dist-newstyle
 
 haddock:
