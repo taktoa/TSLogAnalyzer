@@ -25,6 +25,7 @@ library
                       , time
                       , mtl
                       , transformers
+                      , lens
                       , text
                       , text-icu
                       , extra

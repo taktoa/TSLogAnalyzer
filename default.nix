@@ -1,6 +1,7 @@
 { mkDerivation, attoparsec, base, classy-prelude, configurator
-, containers, extra, fingertree, flow, hashable, ListLike, mtl
-, stdenv, text, text-icu, time, transformers, unordered-containers
+, containers, extra, fingertree, flow, hashable, lens, ListLike
+, mtl, stdenv, text, text-icu, time, transformers
+, unordered-containers
 }:
 mkDerivation {
   pname = "TSLogAnalyzer";
@@ -10,7 +11,7 @@ mkDerivation {
   isExecutable = true;
   libraryHaskellDepends = [
     attoparsec base classy-prelude configurator containers extra
-    fingertree flow hashable ListLike mtl text text-icu time
+    fingertree flow hashable lens ListLike mtl text text-icu time
     transformers unordered-containers
   ];
   executableHaskellDepends = [ base ];
