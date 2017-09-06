@@ -18,6 +18,7 @@ library
                       , classy-prelude
                       , containers
                       , unordered-containers
+                      , fingertree
                       , hashable
                       , ListLike
                       , time
